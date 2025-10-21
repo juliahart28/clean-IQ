@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { computeScore } from "../utils/scoring.js";
 import {
@@ -15,13 +16,13 @@ router.get("/organization", (req, res) => {
 });
 
 router.get("/", (req, res) => {
-  const data = listBathrooms().map(bathroom => ({
-    ...bathroom,
-    ...computeScore(bathroom.numUses, bathroom.soapLevel, bathroom.toiletPaperLevel)
-  }));
+    const data = listBathrooms().map(bathroom => ({
+      ...bathroom,
+      ...computeScore(bathroom.numUses, bathroom.soapLevel, bathroom.toiletPaperLevel)
+    }));
 
-  res.json(data);
-});
+    res.json(data);
+  });
 
 router.post("/prioritize", (req, res) => {
   const { janitorId, currentFloor } = req.body;
@@ -65,19 +66,19 @@ router.post("/prioritize", (req, res) => {
 });
 
 router.post("/:id/markCleaned", (req, res) => {
-  const { id } = req.params;
-  const updated = resetBathroom(id);
+    const { id } = req.params;
+    const updated = resetBathroom(id);
 
-  if (!updated) {
-    return res.status(404).json({ error: "Bathroom not found" });
-  }
+    if (!updated) {
+      return res.status(404).json({ error: "Bathroom not found" });
+    }
 
-  const scored = {
-    ...updated,
-    ...computeScore(updated.numUses, updated.soapLevel, updated.toiletPaperLevel)
-  };
+    const scored = {
+      ...updated,
+      ...computeScore(updated.numUses, updated.soapLevel, updated.toiletPaperLevel)
+    };
 
-  res.json(scored);
-});
+    res.json(scored);
+  });
 
-export default router;
+  export default router;
