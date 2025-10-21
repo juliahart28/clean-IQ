@@ -1,22 +1,73 @@
 import { Router } from "express";
 import { computeScore } from "../utils/scoring.js";
-import { bathrooms, resetBathroom } from "../data/bathrooms.js";
+import {
+  listBathrooms,
+  resetBathroom,
+  getOrganizationTree
+} from "../data/bathrooms.js";
+import { getEmployeeById } from "../data/employees.js";
+import { prioritizeBathrooms } from "../utils/prioritization.js";
 
 const router = Router();
 
-// GET /api/bathrooms
+router.get("/organization", (req, res) => {
+  res.json(getOrganizationTree());
+});
+
 router.get("/", (req, res) => {
-  const data = bathrooms.map(b => ({
-    ...b,
-    ...computeScore(b.numUses, b.soapLevel, b.toiletPaperLevel)
+  const data = listBathrooms().map(bathroom => ({
+    ...bathroom,
+    ...computeScore(bathroom.numUses, bathroom.soapLevel, bathroom.toiletPaperLevel)
   }));
+
   res.json(data);
 });
 
-// POST /api/bathrooms/:id/markCleaned
+router.post("/prioritize", (req, res) => {
+  const { janitorId, currentFloor } = req.body;
+
+  if (!janitorId) {
+    return res.status(400).json({ error: "janitorId is required" });
+  }
+
+  if (currentFloor === undefined) {
+    return res.status(400).json({ error: "currentFloor is required" });
+  }
+
+  const employee = getEmployeeById(janitorId);
+  if (!employee) {
+    return res.status(404).json({ error: "Employee not found" });
+  }
+
+  const bathrooms = listBathrooms().filter(
+    bathroom => bathroom.buildingId === employee.assignedBuildingId
+  );
+
+  const parsedFloor = Number(currentFloor);
+  if (!Number.isFinite(parsedFloor)) {
+    return res.status(400).json({ error: "currentFloor must be a number" });
+  }
+
+  const prioritized = prioritizeBathrooms({
+    bathrooms,
+    currentFloor: parsedFloor
+  });
+
+  res.json({
+    janitor: {
+      id: employee.id,
+      name: employee.name,
+      buildingId: employee.assignedBuildingId,
+      currentFloor: parsedFloor
+    },
+    bathrooms: prioritized
+  });
+});
+
 router.post("/:id/markCleaned", (req, res) => {
-  const id = Number(req.params.id);
+  const { id } = req.params;
   const updated = resetBathroom(id);
+
   if (!updated) {
     return res.status(404).json({ error: "Bathroom not found" });
   }
@@ -25,6 +76,7 @@ router.post("/:id/markCleaned", (req, res) => {
     ...updated,
     ...computeScore(updated.numUses, updated.soapLevel, updated.toiletPaperLevel)
   };
+
   res.json(scored);
 });
 
