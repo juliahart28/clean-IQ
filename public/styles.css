@@ -105,7 +105,8 @@ button {
     border-radius: 50%;
     border: var(--outline-weight) solid var(--brand-gold);
     top: 50%;
-    left: -20vmin; /* push the circle partly off the left edge */
+    left: auto;
+    right: -20vmin;
     transform: translateY(-50%);
     z-index: 0;
 }
@@ -889,6 +890,7 @@ td {
     .login-screen::before {
         width: 120vmax;
         height: 120vmax;
+        left: auto;
         right: -58vmax;
         top: 58%;
     }
