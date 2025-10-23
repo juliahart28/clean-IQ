@@ -82,7 +82,7 @@ button {
     font-size: clamp(2.6rem, 7vw, 4.6rem);
 }
 
-+/* Login Experience */
+/* Login Experience */
 .login-screen {
     position: fixed;
     inset: 0;
@@ -310,7 +310,7 @@ button {
     justify-content: space-between;
 }
 
-+/* Manager Setup Flow */
+/* Manager Setup Flow */
 .manager-setup {
     position: relative;
     background: var(--brand-blue);

@@ -112,11 +112,11 @@
                                     Register each facility with its address and total floors before mapping restrooms.
                                     </p>
                                     <form id="add-building-form" class="stacked-form">
-                                        <label> value="1" required />
+                                        <label>
                                             Building Name
                                             <input name="name" required />
                                         </label>
-                                        <label> accept="image/*" />
+                                        <label>
                                             Address
                                             <input name="address" required />
                                         </label>
@@ -152,34 +152,36 @@
                                     setup.
                                     </p>
                                     <form id="add-bathroom-form" class="stacked-form">
-                                        <label>
-                                            Building
-                                            <select name="building" id="bathroom-building-select" required></select>
-                                        </label>
-                                        <label>
-                                            Floor
-                                            <input name="floor" type="number" min="0" required />
-                                        </label>
-                                        -                  </div>
-                            -                  <div class="two-column">
-                                <label>
-                                    Bathroom Name
-                                    <input name="name" required />
-                                </label>
-                                <label>
-                                    Type
-                                    <select name="type" required>
-                                        <option value="stall">Stall</option>
-                                        <option value="single">Single</option>
-                                        <option value="family">Family</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    Sensor Identifier
-                                    <input name="sensor" required />
-                                </label>
-                                <button type="submit" class="primary-button">Register Bathroom</button>
-                                </form>
+                                        <div class="two-column">
+                                            <label>
+                                                Building
+                                                <select name="building" id="bathroom-building-select" required></select>
+                                            </label>
+                                            <label>
+                                                Floor
+                                                <input name="floor" type="number" min="0" required />
+                                            </label>
+                                        </div>
+                                        <div class="two-column">
+                                            <label>
+                                                Bathroom Name
+                                                <input name="name" required />
+                                            </label>
+                                            <label>
+                                                Type
+                                                <select name="type" required>
+                                                    <option value="stall">Stall</option>
+                                                    <option value="single">Single</option>
+                                                    <option value="family">Family</option>
+                                                </select>
+                                            </label>
+                                            <label>
+                                                Sensor Identifier
+                                                <input name="sensor" required />
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="primary-button">Register Bathroom</button>
+                                    </form>
                                 </article>
                             </div>
                         </div>
