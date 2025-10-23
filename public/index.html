@@ -1,307 +1,259 @@
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CleanIQ Operations</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0"
-    />
-    <script defer src="./app.js"></script>
-  </head>
-  <body>
-    <div id="login-screen" class="login-screen">
-      <div class="login-card">
-          <img src="./assets/cleaniq-logo.png" alt="CleanIQ logo" class="login-logo" /> />
-        <h1>Sign in to CleanIQ</h1>
-        <form id="login-form" class="login-form">
-          <label class="input-label" for="login-email">Email</label>
-          <input id="login-email" name="email" type="email" required />
-          <label class="input-label" for="login-password">Password</label>
-          <input id="login-password" name="password" type="password" required />
-          <button type="submit" class="primary-button">Log In</button>
-          <p class="login-hint">
-            Use <strong>morgan.riley@cleaniq.com</strong> for manager access or
-            <strong>jordan.lee@cleaniq.com</strong> / <strong>priya.natarajan@cleaniq.com</strong>
-            for janitor tools.
-          </p>
-        </form>
-      </div>
-    </div>
-
-    <div id="app" class="app hidden">
-      <header class="app-header">
-        <div class="header-left">
-            <img src="./assets/cleaniq-logo.png" alt="CleanIQ" class="header-logo" />
-          <h1>CleanIQ Command Center</h1>
-        </div>
-        <div class="header-right">
-          <button id="profile-button" class="profile-button">
-            <span class="material-symbol">account_circle</span>
-            <span>Profile</span>
-          </button>
-        </div>
-      </header>
-
-      <div id="profile-popover" class="profile-popover hidden">
-        <div class="profile-details">
-          <div class="profile-email" id="profile-email"></div>
-          <button id="logout-button" class="secondary-button">Log Out</button>
-        </div>
-      </div>
-
-      <main class="app-main">
-        <nav class="role-tabs" id="role-tabs">
-          <button data-role="manager" class="role-tab active">Manager Dashboard</button>
-          <button data-role="janitor" class="role-tab">Janitor Dashboard</button>
-        </nav>
-
-        <section id="manager-view" class="view-panel">
-          <section class="panel">
-            <h2>Manager Setup</h2>
-            <div class="setup-grid">
-              <article class="setup-card">
-                <h3>Connect Employee Directory</h3>
-                <p>
-                  Link your HR system or populate employees manually. Import name, email, and the
-                  building they support so schedules and restroom assignments stay in sync.
-                </p>
-                <form id="add-employee-form" class="stacked-form">
-                  <div class="two-column">
-                    <label>
-                      Name
-                      <input name="name" required />
-                    </label>
-                    <label>
-                      Email
-                      <input name="email" type="email" required />
-                    </label>
-                  </div>
-                  <div class="two-column">
-                    <label>
-                      Role
-                      <select name="role" required>
-                        <option value="Custodian">Custodian</option>
-                        <option value="Manager">Manager</option>
-                      </select>
-                    </label>
-                    <label>
-                      Assigned Building
-                      <select name="building" id="employee-building-select"></select>
-                    </label>
-                  </div>
-                  <button type="submit" class="primary-button">Add Employee</button>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CleanIQ Operations</title>
+        <link rel="stylesheet" href="./styles.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+        href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+        />
+        <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0"
+        />
+        <script defer src="./app.js"></script>
+    </head>
+    <body>
+        <div id="login-screen" class="login-screen">
+            <div class="login-brand brand-mark brand-large" aria-hidden="true">
+                <span class="brand-clean">CLEAN</span><span class="brand-iq">IQ</span>
+            </div>
+            <div class="login-card">
+                <h1 class="login-title">Welcome to CleanIQ</h1>
+                <form id="login-form" class="login-form">
+                    <label class="input-label" for="login-email">Email</label>
+                    <input id="login-email" name="email" type="email" required />
+                    <label class="input-label" for="login-password">Password</label>
+                    <input id="login-password" name="password" type="password" required />
+                    <button type="submit" class="primary-button">Log In</button>
+                    <p class="login-hint">
+                    Use <strong>morgan.riley@cleaniq.com</strong> for manager access or
+                    <strong>jordan.lee@cleaniq.com</strong> / <strong>priya.natarajan@cleaniq.com</strong>
+                    for janitor tools.
+                    </p>
                 </form>
-              </article>
-
-              <article class="setup-card">
-                <h3>Define Buildings &amp; Floors</h3>
-                <p>
-                  Register each facility with its address and number of floors. Upload annotated floor
-                  plans so janitors can see live restroom priorities laid on the map.
-                </p>
-                <form id="add-building-form" class="stacked-form">
-                  <label>
-                    Building Name
-                    <input name="name" required />
-                  </label>
-                  <label>
-                    Address
-                    <input name="address" required />
-                  </label>
-                  <div class="two-column">
-                    <label>
-                      Floors
-                      <input name="floors" type="number" min="1" value="1" required />
-                    </label>
-                    <label>
-                      Upload Floor Plan
-                      <input name="floorplan" type="file" accept="image/*" />
-                    </label>
-                  </div>
-                  <button type="submit" class="primary-button">Save Building</button>
-                </form>
-              </article>
-
-              <article class="setup-card">
-                <h3>Sensor Mapping</h3>
-                <p>
-                  Place markers on the plan for every restroom. Capture the sensor ID so CleanIQ
-                  associates live data with the intended restroom.
-                </p>
-                <form id="add-bathroom-form" class="stacked-form">
-                  <div class="two-column">
-                    <label>
-                      Building
-                      <select name="building" id="bathroom-building-select"></select>
-                    </label>
-                    <label>
-                      Floor
-                      <input name="floor" type="number" min="0" required />
-                    </label>
-                  </div>
-                  <div class="two-column">
-                    <label>
-                      Bathroom Name
-                      <input name="name" required />
-                    </label>
-                    <label>
-                      Type
-                      <select name="type" required>
-                        <option value="stall">Stall</option>
-                        <option value="single">Single</option>
-                        <option value="family">Family</option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    Sensor Identifier
-                    <input name="sensor" required />
-                  </label>
-                  <button type="submit" class="primary-button">Register Bathroom</button>
-                </form>
-              </article>
             </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h2>All Bathrooms</h2>
-              <div class="filter-row">
-                <label>
-                  Building
-                  <select id="filter-building"></select>
-                </label>
-                <label>
-                  Floor
-                  <select id="filter-floor"></select>
-                </label>
-                <label>
-                  Assigned Employee
-                  <select id="filter-employee"></select>
-                </label>
-                <label>
-                  Status
-                  <select id="filter-status">
-                    <option value="">All</option>
-                    <option value="clean">Clean</option>
-                    <option value="needs-attention">Needs Attention</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </label>
-              </div>
+        </div>
+        
+        <div id="app" class="app hidden">
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="brand-mark" aria-label="CleanIQ">
+                        <span class="brand-clean">CLEAN</span><span class="brand-iq">IQ</span>
+                    </div>
+                    <span class="header-subtitle">Command Center</span>
+                </div>
+                <div class="header-right">
+                    <button id="profile-button" class="profile-button">
+                        <span class="material-symbol">account_circle</span>
+                        <span>Profile</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div id="profile-popover" class="profile-popover hidden">
+                <div class="profile-details">
+                    <div class="profile-email" id="profile-email"></div>
+                    <button id="logout-button" class="secondary-button">Log Out</button>
+                </div>
             </div>
-            <div class="table-wrapper">
-              <table id="bathroom-table">
-                <thead>
-                  <tr>
-                    <th>Bathroom</th>
-                    <th>Building</th>
-                    <th>Floor</th>
-                    <th>Assigned To</th>
-                    <th>Score</th>
-                    <th>Alerts</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Staffing &amp; Schedules</h2>
-              <div class="actions">
-                <button id="edit-schedule-button" class="secondary-button">
-                  <span class="material-symbol">edit_calendar</span>
-                  Edit Schedule
-                </button>
-                <button id="add-shift-button" class="icon-button" aria-label="Add shift">
-                  <span class="material-symbol">add</span>
-                </button>
-              </div>
-            </div>
-            <div class="staff-grid" id="staff-grid"></div>
-          </section>
-        </section>
-
-        <section id="janitor-view" class="view-panel hidden">
-          <section class="panel">
-            <h2>Personalized Route</h2>
-            <div class="route-controls">
-              <label>
-                Current Floor
-                <select id="route-floor-select"></select>
-              </label>
-              <button id="refresh-route" class="secondary-button">Refresh Route</button>
-            </div>
-            <div id="route-map" class="route-map"></div>
-          </section>
-
-          <section class="panel">
-            <h2>My Schedule</h2>
-            <div id="schedule-cards" class="schedule-cards"></div>
-            <button id="toggle-schedule" class="secondary-button">View All Upcoming Shifts</button>
-          </section>
-
-          <section class="panel">
-            <h2>Restroom Information</h2>
-            <div class="route-controls">
-              <label>
-                Floor
-                <select id="restroom-floor-select"></select>
-              </label>
-            </div>
-            <div id="restroom-list" class="restroom-list"></div>
-          </section>
-        </section>
-      </main>
-    </div>
-
-    <div id="schedule-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
-      <div class="modal-content">
-        <header class="modal-header">
-          <h2 id="schedule-modal-title">Add Shift</h2>
-          <button id="close-schedule-modal" class="icon-button" aria-label="Close">
-            <span class="material-symbol">close</span>
-          </button>
-        </header>
-        <form id="add-shift-form" class="stacked-form">
-          <label>
-            Employee
-            <select name="employeeId" id="shift-employee"></select>
-          </label>
-          <div class="two-column">
-            <label>
-              Start Time
-              <input name="startTime" type="datetime-local" required />
-            </label>
-            <label>
-              End Time
-              <input name="endTime" type="datetime-local" required />
-            </label>
-          </div>
-          <div class="two-column">
-            <label>
-              Building
-              <select name="buildingId" id="shift-building"></select>
-            </label>
-            <label>
-              Floor
-              <input name="floorNumber" type="number" min="0" required />
-            </label>
-          </div>
-          <button type="submit" class="primary-button">Save Shift</button>
-        </form>
-      </div>
-    </div>
-  </body>
-</html>
+            
+            <main class="app-main">
+                <nav class="role-tabs" id="role-tabs">
+                    <button data-role="manager" class="role-tab active">Manager Dashboard</button>
+                    <button data-role="janitor" class="role-tab">Janitor Dashboard</button>
+                </nav>
+                
+                <section id="manager-view" class="view-panel">
+                    <section id="manager-setup" class="manager-setup hidden" aria-live="polite">
+                        <div class="manager-setup-window">
+                            <div class="brand-mark brand-large" aria-hidden="true">
+                                <span class="brand-clean">CLEAN</span><span class="brand-iq">IQ</span>
+                            </div>
+                            <p id="setup-progress" class="setup-progress" aria-live="polite"></p>
+                            <div class="setup-steps">
+                                <article class="setup-step" data-setup-step="employees">
+                                    <h2>Step 1: Add Your Team</h2>
+                                    <p class="setup-description">
+                                    Create at least one employee so schedules and restroom ownership have a starting
+                                    point.
+                                    </p>
+                                    <form id="add-employee-form" class="stacked-form">
+                                        <label>
+                                            Name
+                                            <input name="name" required />
+                                        </label>
+                                        <label>
+                                            Email
+                                            <input name="email" type="email" required />
+                                        </label>
+                                        <label>
+                                            Role
+                                            <select name="role" required>
+                                                <option value="Custodian">Custodian</option>
+                                                <option value="Manager">Manager</option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            Assigned Building
+                                            <select name="building" id="employee-building-select"></select>
+                                        </label>
+                                        <button type="submit" class="primary-button">Save Employee</button>
+                                    </form>
+                                </article>
+                                <article class="setup-step" data-setup-step="buildings">
+                                    <h2>Step 2: Add Buildings</h2>
+                                    <p class="setup-description">
+                                    Register each facility with its address and total floors before mapping restrooms.
+                                    </p>
+                                    <form id="add-building-form" class="stacked-form">
+                                        <label> value="1" required />
+                                            Building Name
+                                            <input name="name" required />
+                                        </label>
+                                        <label> accept="image/*" />
+                                            Address
+                                            <input name="address" required />
+                                        </label>
+                                        <label>
+                                            Floors
+                                            <input name="floors" type="number" min="1" value="1" required />
+                                        </label>
+                                        <button type="submit" class="primary-button">Save Building</button>
+                                    </form>
+                                </article>
+                                <article class="setup-step" data-setup-step="floorplans">
+                                    <h2>Step 3: Upload Floor Plans</h2>
+                                    <p class="setup-description">
+                                    Add at least one annotated floor plan so bathroom sensors can be placed accurately.
+                                    </p>
+                                    <form id="add-floorplan-form" class="stacked-form">
+                                        <label>
+                                            Building
+                                            <select id="floorplan-building-select" name="building" required></select>
+                                        </label>
+                                        <label>
+                                            Floor Plan File
+                                            <input name="floorplan" type="file" accept="image/*,.pdf" required />
+                                        </label>
+                                        <button type="submit" class="primary-button">Upload Floor Plan</button>
+                                    </form>
+                                </article>
+                                
+                                <article class="setup-step" data-setup-step="bathrooms">
+                                    <h2>Step 4: Mark Restrooms</h2>
+                                    <p class="setup-description">
+                                    Place every restroom on its floor plan and assign the right custodian to finish
+                                    setup.
+                                    </p>
+                                    <form id="add-bathroom-form" class="stacked-form">
+                                        <label>
+                                            Building
+                                            <select name="building" id="bathroom-building-select" required></select>
+                                        </label>
+                                        <label>
+                                            Floor
+                                            <input name="floor" type="number" min="0" required />
+                                        </label>
+                                        -                  </div>
+                            -                  <div class="two-column">
+                                <label>
+                                    Bathroom Name
+                                    <input name="name" required />
+                                </label>
+                                <label>
+                                    Type
+                                    <select name="type" required>
+                                        <option value="stall">Stall</option>
+                                        <option value="single">Single</option>
+                                        <option value="family">Family</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Sensor Identifier
+                                    <input name="sensor" required />
+                                </label>
+                                <button type="submit" class="primary-button">Register Bathroom</button>
+                                </form>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    
+                    <section class="panel" data-manager-panel>
+                        <div class="panel-header">
+                            <h2>All Bathrooms</h2>
+                            <div class="filter-row">
+                                <label>
+                                    Building
+                                    <select id="filter-building"></select>
+                                </label>
+                                <label>
+                                    Floor
+                                    <select id="filter-floor"></select>
+                                </label>
+                                <label>
+                                    Assigned Employee
+                                    <select id="filter-employee"></select>
+                                </label>
+                                <label>
+                                    Status
+                                    <select id="filter-status">
+                                        <option value="">All</option>
+                                        <option value="clean">Clean</option>
+                                        <option value="needs-attention">Needs Attention</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="bathroom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bathroom</th>
+                                        <th>Building</th>
+                                        <th>Floor</th>
+                                        <th>Assigned To</th>
+                                        <th>Score</th>
+                                        <th>Alerts</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </section>
+                    
+                    <section class="panel" data-manager-panel>
+                        <div class="panel-header">
+                            <h2>Staffing &amp; Schedules</h2>
+                            <div class="actions">
+                                <button id="edit-schedule-button" class="secondary-button">
+                                    <span class="material-symbol">edit_calendar</span>
+                                    Edit Schedule
+                                </button>
+                                <button id="add-shift-button" class="icon-button" aria-label="Add shift">
+                                    <span class="material-symbol">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="staff-grid" id="staff-grid"></div>
+                    </section>
+                </section>
+                
+                <section id="janitor-view" class="view-panel hidden">
+                    <section class="panel">
+                        <h2>Personalized Route</h2>
+                        <div class="route-controls">
+                            <label>
+                                Current Floor
+                                <select id="route-floor-select"></select>
+                            </label>
+                            <button id="refresh-route" class="secondary-button">Refresh Route</button>
+                            
