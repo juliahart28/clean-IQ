@@ -57,6 +57,7 @@ button {
 }
 
 /* Branding */
+
 .brand-mark {
     display: inline-flex;
     align-items: center;
@@ -83,11 +84,13 @@ button {
 }
 
 /* Login Experience */
+
 .login-screen {
     position: fixed;
     inset: 0;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: clamp(20px, 6vw, 48px);
     background: var(--brand-blue);
     overflow: hidden;
@@ -96,29 +99,40 @@ button {
 .login-screen::before {
     content: "";
     position: absolute;
-    width: 135vmax;
-    height: 135vmax;
+    width: 120vmin;
+    height: 120vmin;
     background: var(--surface);
     border-radius: 50%;
     border: var(--outline-weight) solid var(--brand-gold);
-    right: -54vmax;
     top: 50%;
-    transform: translateY(-50%);
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
 }
+
+.login-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    left: calc(50% - var(--outline-weight));
+    background: var(--surface);
+    z-index: 1;
 
 .login-brand {
     position: absolute;
     top: clamp(8%, 14vh, 22%);
-    left: clamp(6%, 10vw, 16%);
-    z-index: 1;
-    text-align: left;
+    right: clamp(6%, 10vw, 16%);
+    left: auto;
+    z-index: 2;
+    text-align: right;
+    justify-content: flex-end;
     font-size: clamp(3rem, 8vw, 5rem);
     filter: drop-shadow(0 16px 32px rgba(0, 31, 164, 0.35));
 }
 
 .login-card {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     width: min(440px, 100%);
     background: var(--surface);
     border-radius: 24px;
@@ -167,6 +181,7 @@ button {
 }
 
 /* Buttons */
+
 .profile-button,
 .primary-button,
 .secondary-button,
@@ -423,6 +438,7 @@ button {
 }
 
 /* Tables & Shared Controls */
+
 .filter-row,
 .route-controls,
 .actions {
@@ -471,6 +487,7 @@ td {
 }
 
 /* Badges & Alerts */
+
 .badge,
 .alert-pill,
 .shift-item,
@@ -531,6 +548,7 @@ td {
 }
 
 /* Staffing & Scheduling */
+
 .staff-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -568,7 +586,85 @@ td {
     gap: 10px;
 }
 
+.status-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.status-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.status-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 16px 28px rgba(31, 35, 51, 0.2);
+}
+
+.status-circle.clean {
+    background: #2f9d61;
+}
+
+.status-circle.needs-attention {
+    background: #ffc600;
+    color: #3c2a00;
+}
+
+.status-circle.urgent {
+    background: #f15b4a;
+}
+
+.status-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+
+.status-count {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-strong);
+}
+
+.status-helper {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.status-summary .status-empty {
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px dashed var(--border);
+    background: rgba(31, 107, 255, 0.06);
+    color: var(--text-muted);
+}
+
+
 /* Route Visuals */
+
 .route-map {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -654,6 +750,7 @@ td {
 }
 
 /* Schedule Cards & Restrooms */
+
 .schedule-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -703,6 +800,7 @@ td {
 }
 
 /* Modal & Profile */
+
 .modal {
     position: fixed;
     inset: 0;
@@ -755,6 +853,7 @@ td {
 }
 
 /* Responsive */
+
 @media (max-width: 900px) {
     .app-main {
         padding: 24px 16px 120px;

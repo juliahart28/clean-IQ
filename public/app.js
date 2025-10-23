@@ -20,6 +20,7 @@ const selectors = {
     managerSetup: document.getElementById("manager-setup"),
     managerPanels: Array.from(document.querySelectorAll("[data-manager-panel]")),
     janitorView: document.getElementById("janitor-view"),
+    janitorStatusSummary: document.getElementById("janitor-status-summary"),
     filterBuilding: document.getElementById("filter-building"),
     filterFloor: document.getElementById("filter-floor"),
     filterEmployee: document.getElementById("filter-employee"),
@@ -148,6 +149,16 @@ function getFloorsForBuilding(buildingId) {
 
 function getAllBathrooms() {
     return [...state.baseBathrooms, ...state.customBathrooms];
+}
+
+function getBathroomsForCurrentJanitor() {
+    if (!state.currentUser || !state.currentUser.assignedBuildingId) {
+        return [];
+    }
+
+    return getAllBathrooms().filter(
+        bathroom => bathroom.buildingId === state.currentUser.assignedBuildingId
+    );
 }
 
 function hasUploadedFloorPlans() {
@@ -561,6 +572,90 @@ function hazardFromAlerts(alerts) {
     };
 }
 
+function renderJanitorSummary() {
+    if (!selectors.janitorStatusSummary) {
+        return;
+    }
+
+    selectors.janitorStatusSummary.innerHTML = "";
+
+    if (!state.currentUser) {
+        return;
+    }
+
+    const bathrooms = getBathroomsForCurrentJanitor();
+
+    if (bathrooms.length === 0) {
+        const emptyState = document.createElement("p");
+        emptyState.className = "status-empty";
+        emptyState.textContent = "No restrooms are assigned to your building yet.";
+        selectors.janitorStatusSummary.append(emptyState);
+        return;
+    }
+
+    const locationName = getBuildingName(state.currentUser.assignedBuildingId);
+    const location = locationName && locationName !== "Unknown"
+        ? locationName
+        : "your building";
+
+    const summary = {
+        clean: {
+            label: "Clean",
+            helper: `All set in ${location}`,
+            count: 0
+        },
+        "needs-attention": {
+            label: "Needs Attention",
+            helper: `Check soon in ${location}`,
+            count: 0
+        },
+        urgent: {
+            label: "Urgent",
+            helper: `Requires immediate fix in ${location}`,
+            count: 0
+        }
+    };
+
+    for (const bathroom of bathrooms) {
+        const key = categoryKey(bathroom.category);
+        if (summary[key]) {
+            summary[key].count += 1;
+        }
+    }
+
+    Object.entries(summary).forEach(([key, data]) => {
+        const card = document.createElement("article");
+        card.className = "status-card";
+
+        const circle = document.createElement("span");
+        circle.className = `status-circle ${key}`;
+        circle.textContent = data.count;
+        circle.setAttribute("aria-hidden", "true");
+        card.append(circle);
+
+        const meta = document.createElement("div");
+        meta.className = "status-meta";
+
+        const label = document.createElement("span");
+        label.className = "status-label";
+        label.textContent = data.label;
+        meta.append(label);
+
+        const count = document.createElement("span");
+        count.className = "status-count";
+        count.textContent = `${data.count} ${data.count === 1 ? "Restroom" : "Restrooms"}`;
+        meta.append(count);
+
+        const helper = document.createElement("span");
+        helper.className = "status-helper";
+        helper.textContent = data.helper;
+        meta.append(helper);
+
+        card.append(meta);
+        selectors.janitorStatusSummary.append(card);
+    });
+}
+
 async function renderRouteMap() {
     selectors.routeMap.innerHTML = "";
     if (!state.currentUser) {
@@ -716,6 +811,7 @@ async function markRestroomClean(bathroom) {
         bathroom.alerts = [];
         renderRestroomList();
         renderBathroomTable();
+        renderJanitorSummary();
         return;
     }
     
@@ -729,6 +825,7 @@ async function markRestroomClean(bathroom) {
         }
         renderRestroomList();
         renderBathroomTable();
+        renderJanitorSummary();
         if (!selectors.routeMap.innerHTML.includes("Unable")) {
             renderRouteMap();
         }
@@ -869,6 +966,7 @@ function registerEventListeners() {
         selectors.app.classList.add("hidden");
         selectors.loginScreen.classList.remove("hidden");
         closeProfilePopover();
+        renderJanitorSummary();
     });
     
     selectors.addEmployeeForm.addEventListener("submit", event => {
@@ -918,7 +1016,7 @@ function registerEventListeners() {
         
         state.customBuildings.push(newBuilding);
         populateBuildingSelects();
-        updateSetupFlow;
+        updateSetupFlow();
         selectors.addBuildingForm.reset();
     });
     
@@ -987,6 +1085,7 @@ function registerEventListeners() {
         state.customBathrooms.push(newBathroom);
         renderBathroomTable();
         renderRestroomList();
+        renderJanitorSummary();
         updateSetupFlow();
         selectors.addBathroomForm.reset();
     });
@@ -1059,6 +1158,7 @@ selectors.loginForm.addEventListener("submit", async event => {
         renderRouteMap();
         renderRestroomList();
         renderScheduleCards();
+        renderJanitorSummary();
         updateSetupFlow();
         setRoleView(employee.role);
     } catch (error) {
