@@ -99,14 +99,14 @@ button {
 .login-screen::before {
     content: "";
     position: absolute;
-    width: 120vmin;
-    height: 120vmin;
+    width: 140vmin;
+    height: 140vmin;
     background: var(--surface);
     border-radius: 50%;
     border: var(--outline-weight) solid var(--brand-gold);
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    left: -20vmin; /* push the circle partly off the left edge */
+    transform: translateY(-50%);
     z-index: 0;
 }
 
@@ -115,8 +115,9 @@ button {
     position: absolute;
     inset: 0;
     left: calc(50% - var(--outline-weight));
-    background: var(--surface);
+    background: transparent;
     z-index: 1;
+}
 
 .login-brand {
     position: absolute;
