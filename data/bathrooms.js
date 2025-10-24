@@ -1,10 +1,14 @@
-export const bathroomTypes = ["stall", "single", "family"];
+export const bathroomTypes = [
+  "single-stall",
+  "accessible",
+  "multi-stall"
+];
 
 export const bathrooms = [
   {
     id: "bldg-1-floor-1-east-stall",
     name: "East Wing Stall",
-    type: "stall",
+    type: "multi-stall",
     buildingId: "bldg-1",
     buildingName: "Innovation Hall",
     floorNumber: 1,
@@ -12,12 +16,14 @@ export const bathrooms = [
     assignedEmployeeId: "emp-1",
     numUses: 3,
     soapLevel: "ok",
-    toiletPaperLevel: "low"
+     toiletPaperLevel: "low",
+    stalls: 3,
+    lowPaperStalls: null
   },
   {
     id: "bldg-1-floor-1-west-single",
     name: "West Single Occupancy",
-    type: "single",
+    type: "single-stall",
     buildingId: "bldg-1",
     buildingName: "Innovation Hall",
     floorNumber: 1,
@@ -25,12 +31,14 @@ export const bathrooms = [
     assignedEmployeeId: "emp-1",
     numUses: 0,
     soapLevel: "ok",
-    toiletPaperLevel: "ok"
+    toiletPaperLevel: null,
+    stalls: null,
+    lowPaperStalls: 0
   },
   {
     id: "bldg-1-floor-2-north-family",
     name: "North Family Suite",
-    type: "family",
+    type: "accessible",
     buildingId: "bldg-1",
     buildingName: "Innovation Hall",
     floorNumber: 2,
@@ -51,25 +59,29 @@ export const bathrooms = [
     assignedEmployeeId: "emp-3",
     numUses: 9,
     soapLevel: "ok",
-    toiletPaperLevel: "empty"
+    toiletPaperLevel: null,
+    stalls: 5,
+    lowPaperStalls: 1
   },
   {
     id: "bldg-2-floor-1-lobby-stall",
     name: "Lobby Stall",
-    type: "stall",
+    type: "multi-stall",
     buildingId: "bldg-2",
     buildingName: "Science Pavilion",
     floorNumber: 1,
     floorName: "Ground Floor",
     assignedEmployeeId: "emp-2",
     numUses: 2,
-    soapLevel: "ok",
-    toiletPaperLevel: "ok"
+    soapLevel: "low",
+    toiletPaperLevel: null,
+    stalls: 5,
+    lowPaperStalls: 0
   },
   {
     id: "bldg-2-floor-3-east-single",
     name: "East Study Wing",
-    type: "single",
+    type: "single-stall",
     buildingId: "bldg-2",
     buildingName: "Science Pavilion",
     floorNumber: 3,
@@ -77,7 +89,9 @@ export const bathrooms = [
     assignedEmployeeId: "emp-2",
     numUses: 6,
     soapLevel: "empty",
-    toiletPaperLevel: "low"
+    toiletPaperLevel: "low",
+    stalls: null,
+    lowPaperStalls: null
   }
 ];
 
@@ -97,7 +111,8 @@ export function resetBathroom(id) {
 
     bathroom.numUses = 0;
     bathroom.soapLevel = "ok";
-    bathroom.toiletPaperLevel = "ok";
+    bathroom.toiletPaperLevel = "ok";    
+    bathroom.lowPaperStalls = 0;
 
     return { ...bathroom };
   }

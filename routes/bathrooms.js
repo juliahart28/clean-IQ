@@ -1,6 +1,7 @@
 
 import { Router } from "express";
 import { computeScore } from "../utils/scoring.js";
+import { computeBuildingAverages } from "../utils/analytics.js";
 import {
   listBathrooms,
   resetBathroom,
@@ -17,12 +18,20 @@ router.get("/organization", (req, res) => {
 
 router.get("/", (req, res) => {
     const data = listBathrooms().map(bathroom => ({
-      ...bathroom,
-      ...computeScore(bathroom.numUses, bathroom.soapLevel, bathroom.toiletPaperLevel)
-    }));
+    ...bathroom,
+    ...computeScore(bathroom)
+  }));
 
     res.json(data);
-  });
+  }); 
+  router.get("/averages", (req, res) => {
+    const bathrooms = listBathrooms();
+    const averages = computeBuildingAverages(bathrooms.map(bathroom => ({
+      ...bathroom,
+      ...computeScore(bathroom)
+    })));
+  res.json(averages);
+});
 
 router.post("/prioritize", (req, res) => {
   const { janitorId, currentFloor } = req.body;
@@ -75,7 +84,7 @@ router.post("/:id/markCleaned", (req, res) => {
 
     const scored = {
       ...updated,
-      ...computeScore(updated.numUses, updated.soapLevel, updated.toiletPaperLevel)
+      ...computeScore(updated)
     };
 
     res.json(scored);

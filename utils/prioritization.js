@@ -25,7 +25,7 @@ export function prioritizeBathrooms({ bathrooms, currentFloor }) {
 
   const decorated = bathrooms.map(bathroom => ({
     ...bathroom,
-    ...computeScore(bathroom.numUses, bathroom.soapLevel, bathroom.toiletPaperLevel)
+    ...computeScore(bathroom)
   }));
 
   const actionable = decorated.filter(bathroom => {

@@ -80,6 +80,8 @@ function initializeDomReferences() {
         addBuildingForm: document.getElementById("add-building-form"),
         bathroomBuildingSelect: document.getElementById("bathroom-building-select"),
         addBathroomForm: document.getElementById("add-bathroom-form"),
+        bathroomTypeSelect: document.getElementById("bathroom-type-select"),
+        bathroomStallsField: document.getElementById("bathroom-stalls-field"),
         editScheduleButton: document.getElementById("edit-schedule-button"),
         addShiftButton: document.getElementById("add-shift-button"),
         scheduleModal: document.getElementById("schedule-modal"),
@@ -87,8 +89,7 @@ function initializeDomReferences() {
         addShiftForm: document.getElementById("add-shift-form"),
         shiftEmployeeSelect: document.getElementById("shift-employee"),
         shiftBuildingSelect: document.getElementById("shift-building"),
-        floorPlanForm: document.getElementById("add-floorplan-form"),
-        floorPlanBuildingSelect: document.getElementById("floorplan-building-select"),
+        managerOverview: document.getElementById("manager-overview"),
         setupProgress: document.getElementById("setup-progress")
     });
 
@@ -104,7 +105,7 @@ function initializeDomReferences() {
     }
 }
 
-const setupSequence = ["employees", "buildings", "floorplans", "bathrooms"];
+const setupSequence = ["employees", "buildings", "bathrooms"];
 const setupStepLabels = {
     employees: "Add Your Team",
     buildings: "Add Buildings",
@@ -194,6 +195,54 @@ function getAllBathrooms() {
     return [...state.baseBathrooms, ...state.customBathrooms];
 }
 
+function getFloorPlanForBuilding(buildingId) {
+    if (!buildingId) {
+        return null;
+    }
+    return state.floorPlans.find(plan => plan.buildingId === buildingId) || null;
+}
+
+function computeLocalBuildingAverages() {
+    const bathrooms = getAllBathrooms();
+    const totals = new Map();
+
+    for (const bathroom of bathrooms) {
+        if (!bathroom || !bathroom.buildingId) {
+            continue;
+        }
+
+        const entry = totals.get(bathroom.buildingId) || {
+            buildingId: bathroom.buildingId,
+            buildingName: bathroom.buildingName || getBuildingName(bathroom.buildingId),
+            total: 0,
+            count: 0
+        };
+
+        const score = Number(bathroom.score);
+        entry.total += Number.isFinite(score) ? score : 0;
+        entry.count += 1;
+
+        if (!entry.buildingName) {
+            entry.buildingName = getBuildingName(bathroom.buildingId);
+        }
+
+        totals.set(bathroom.buildingId, entry);
+    }
+
+    return Array.from(totals.values()).map(entry => {
+        const average = entry.count === 0 ? 0 : entry.total / entry.count;
+        const clamped = Math.max(0, Math.min(100, average));
+        const rounded = Math.round(clamped);
+        return {
+            buildingId: entry.buildingId,
+            buildingName: entry.buildingName,
+            averageScore: rounded,
+            category: categoryFromScore(rounded),
+            bathroomCount: entry.count
+        };
+    });
+}
+
 function getBathroomsForCurrentJanitor() {
     if (!state.currentUser || !state.currentUser.assignedBuildingId) {
         return [];
@@ -204,23 +253,12 @@ function getBathroomsForCurrentJanitor() {
     );
 }
 
-function hasUploadedFloorPlans() {
-    if (state.floorPlans.length > 0) {
-        return true;
-    }
-    return state.organization.some(
-                                   building => Array.isArray(building.floors) && building.floors.length > 0
-                                   );
-}
-
 function isSetupStepComplete(step) {
     switch (step) {
         case "employees":
             return getAllEmployees().length > 0;
         case "buildings":
             return getAllBuildings().length > 0;
-        case "floorplans":
-            return hasUploadedFloorPlans();
         case "bathrooms":
             return getAllBathrooms().length > 0;
         default:
@@ -274,6 +312,20 @@ function categoryKey(category) {
     return normalized;
 }
 
+function categoryFromScore(score) {
+    const numeric = Number(score);
+    if (!Number.isFinite(numeric)) {
+        return "Clean";
+    }
+    if (numeric < 20) {
+        return "Urgent";
+    }
+    if (numeric < 50) {
+        return "Needs Attention";
+    }
+    return "Clean";
+}
+
 function formatDateRange(start, end) {
     if (!start || !end) {
         return "";
@@ -314,8 +366,7 @@ function populateBuildingSelects() {
     const selects = [
         selectors.employeeBuildingSelect,
         selectors.bathroomBuildingSelect,
-        selectors.shiftBuildingSelect,
-        selectors.floorPlanBuildingSelect
+        selectors.shiftBuildingSelect
     ];
     
     for (const select of selects) {
@@ -477,6 +528,80 @@ function renderBathroomTable() {
         append(row, alertCell);
 
         append(selectors.bathroomTableBody, row);
+    }
+}
+
+function renderManagerOverview() {
+    if (!selectors.managerOverview) {
+        return;
+    }
+
+    clear(selectors.managerOverview);
+    const buildings = getAllBuildings();
+
+    if (buildings.length === 0) {
+        const message = el("p", { class: "status-helper" }, "Add a building to see performance data.");
+        append(selectors.managerOverview, message);
+        return;
+    }
+
+    const averages = computeLocalBuildingAverages();
+    const averageById = new Map(averages.map(summary => [summary.buildingId, summary]));
+
+    for (const building of buildings) {
+        const summary = averageById.get(building.id) || {
+            buildingId: building.id,
+            buildingName: building.name,
+            averageScore: 0,
+            category: "Clean",
+            bathroomCount: 0
+        };
+
+        const floorPlan = getFloorPlanForBuilding(building.id);
+        const card = el("div", { class: "status-card" });
+
+        const circleClass = `status-circle ${categoryKey(summary.category)}`;
+        const scoreText = summary.bathroomCount > 0 ? summary.averageScore : "—";
+        append(card, el("div", { class: circleClass }, scoreText));
+
+        const meta = el("div", { class: "status-meta" });
+        append(meta, el("strong", {}, summary.buildingName || building.name));
+
+        const bathroomLabel = summary.bathroomCount > 0
+            ? `${summary.bathroomCount} bathroom${summary.bathroomCount === 1 ? "" : "s"}`
+            : "No bathrooms yet";
+        append(meta, el("span", { class: "status-helper" }, bathroomLabel));
+
+        append(meta, el("span", { class: `badge ${categoryKey(summary.category)}` }, summary.category));
+
+        if (floorPlan) {
+            append(meta, el("span", { class: "status-helper" }, `Floor plan: ${floorPlan.fileName}`));
+        }
+
+        const button = el(
+            "button",
+            {
+                type: "button",
+                class: floorPlan ? "secondary-button" : "primary-button",
+                "data-floorplan-building": building.id
+            },
+            floorPlan ? "Edit Floor Plan" : "Add Floor Plan"
+        );
+        append(meta, button);
+
+        if (!floorPlan) {
+            const warning = el(
+                "p",
+                { class: "error" },
+                "No floor plan is uploaded. For best performance and accurate routing, we recommend uploading a floor plan."
+            );
+            warning.style.margin = "0";
+            warning.style.textAlign = "left";
+            append(meta, warning);
+        }
+
+        append(card, meta);
+        append(selectors.managerOverview, card);
     }
 }
 
@@ -870,6 +995,7 @@ async function markRestroomClean(bathroom) {
         renderRestroomList();
         renderBathroomTable();
         renderJanitorSummary();
+        renderManagerOverview();
         return;
     }
     
@@ -884,6 +1010,7 @@ async function markRestroomClean(bathroom) {
         renderRestroomList();
         renderBathroomTable();
         renderJanitorSummary();
+        renderManagerOverview();
         if (selectors.routeMap && selectors.routeMap.dataset.error !== "true") {
             renderRouteMap();
         }
@@ -953,6 +1080,7 @@ async function initializeData() {
     populateEmployeeFilters();
     renderBathroomTable();
     renderStaffGrid();
+    renderManagerOverview();
     updateSetupFlow();
 }
 
@@ -995,6 +1123,61 @@ function closeScheduleModal() {
         selectors.addShiftForm.reset();
     }
     populateShiftModalDefaults();
+}
+
+function toggleStallsField() {
+    if (!selectors.bathroomStallsField) {
+        return;
+    }
+    const type = selectors.bathroomTypeSelect ? selectors.bathroomTypeSelect.value : "";
+    const show = type === "multi-stall";
+    selectors.bathroomStallsField.classList.toggle("hidden", !show);
+
+    const input = selectors.bathroomStallsField.querySelector("input");
+    if (input) {
+        if (show) {
+            input.required = true;
+        } else {
+            input.required = false;
+            input.value = "";
+            input.setCustomValidity("");
+        }
+    }
+}
+
+function promptForFloorPlanUpload(buildingId) {
+    if (!buildingId) {
+        return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,.pdf";
+
+    input.addEventListener("change", () => {
+        const file = input.files && input.files[0];
+        if (!file) {
+            return;
+        }
+
+        const fileName = file.name || `Floor Plan ${state.floorPlans.length + 1}`;
+        const existingIndex = state.floorPlans.findIndex(plan => plan.buildingId === buildingId);
+
+        if (existingIndex >= 0) {
+            const current = state.floorPlans[existingIndex];
+            state.floorPlans[existingIndex] = { ...current, fileName };
+        } else {
+            state.floorPlans.push({
+                id: `floorplan-${Date.now()}`,
+                buildingId,
+                fileName
+            });
+        }
+
+        renderManagerOverview();
+    });
+
+    input.click();
 }
 
 function registerEventListeners() {
@@ -1066,6 +1249,21 @@ function registerEventListeners() {
         });
     }
 
+       if (selectors.bathroomTypeSelect) {
+        selectors.bathroomTypeSelect.addEventListener("change", toggleStallsField);
+    }
+
+    if (selectors.managerOverview) {
+        selectors.managerOverview.addEventListener("click", event => {
+            const button = event.target.closest("[data-floorplan-building]");
+            if (!button) {
+                return;
+            }
+            const buildingId = button.getAttribute("data-floorplan-building");
+            promptForFloorPlanUpload(buildingId);
+        });
+    }
+
     if (selectors.addEmployeeForm) {
         selectors.addEmployeeForm.addEventListener("submit", event => {
             event.preventDefault();
@@ -1092,6 +1290,7 @@ function registerEventListeners() {
             renderStaffGrid();
             updateSetupFlow();
             selectors.addEmployeeForm.reset();
+            renderManagerOverview();
         });
     }
 
@@ -1118,38 +1317,9 @@ function registerEventListeners() {
             populateBuildingSelects();
             updateSetupFlow();
             selectors.addBuildingForm.reset();
+            renderManagerOverview();
         });
     }
-    
-    if (selectors.floorPlanForm) {
-        selectors.floorPlanForm.addEventListener("submit", event => {
-            event.preventDefault();
-            const formData = new FormData(selectors.floorPlanForm);
-            const buildingId = formData.get("building");
-            const file = formData.get("floorplan");
-            
-            if (!buildingId) {
-                return;
-            }
-            
-            const fileName =
-            file && typeof file === "object" && "name" in file && file.name
-            ? file.name
-            : file
-            ? String(file)
-            : `Floor Plan ${state.floorPlans.length + 1}`;
-            
-            state.floorPlans.push({
-                id: `floorplan-${Date.now()}`,
-                buildingId,
-                fileName
-            });
-            
-            selectors.floorPlanForm.reset();
-            updateSetupFlow();
-        });
-    }
-    
     
         if (selectors.addBathroomForm) {
         selectors.addBathroomForm.addEventListener("submit", event => {
@@ -1160,9 +1330,27 @@ function registerEventListeners() {
             const name = formData.get("name").trim();
             const type = formData.get("type");
             const sensor = formData.get("sensor").trim();
+            const stallsInput = formData.get("stalls");
+            const parsedStalls = Number(stallsInput);
 
             if (!buildingId || Number.isNaN(floor) || !name) {
                 return;
+            }
+
+            if (type === "multi-stall") {
+                const stallsFieldInput = selectors.bathroomStallsField
+                ? selectors.bathroomStallsField.querySelector("input")
+                : null;
+                const validStalls = Number.isInteger(parsedStalls) && parsedStalls >= 1;
+                if (!validStalls) {
+                    if (stallsFieldInput) {
+                        stallsFieldInput.setCustomValidity("Please enter a stall count of at least 1.");
+                        stallsFieldInput.reportValidity();
+                        stallsFieldInput.setCustomValidity("");
+                        stallsFieldInput.focus();
+                    }
+                    return;
+                }
             }
 
             const newBathroom = {
@@ -1177,6 +1365,8 @@ function registerEventListeners() {
                 numUses: 0,
                 soapLevel: "ok",
                 toiletPaperLevel: "ok",
+                stalls: type === "multi-stall" ? Math.max(1, Math.floor(parsedStalls)) : null,
+                lowPaperStalls: type === "multi-stall" ? 0 : null,
                 score: 100,
                 category: "Clean",
                 alerts: [],
@@ -1190,10 +1380,13 @@ function registerEventListeners() {
             renderJanitorSummary();
             updateSetupFlow();
             selectors.addBathroomForm.reset();
+            toggleStallsField();
+            renderManagerOverview();
         });
     }
+    toggleStallsField();
     if (selectors.editScheduleButton) {
-        selectors.editScheduleButton.addEventListener("click", openScheduleModal); 
+        selectors.editScheduleButton.addEventListener("click", openScheduleModal);
     }
     if (selectors.addShiftButton) {
         selectors.addShiftButton.addEventListener("click", openScheduleModal);

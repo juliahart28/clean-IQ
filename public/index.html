@@ -127,26 +127,8 @@
                                         <button type="submit" class="primary-button">Save Building</button>
                                     </form>
                                 </article>
-                                <article class="setup-step" data-setup-step="floorplans">
-                                    <h2>Step 3: Upload Floor Plans</h2>
-                                    <p class="setup-description">
-                                    Add at least one annotated floor plan so bathroom sensors can be placed accurately.
-                                    </p>
-                                    <form id="add-floorplan-form" class="stacked-form">
-                                        <label>
-                                            Building
-                                            <select id="floorplan-building-select" name="building" required></select>
-                                        </label>
-                                        <label>
-                                            Floor Plan File
-                                            <input name="floorplan" type="file" accept="image/*,.pdf" required />
-                                        </label>
-                                        <button type="submit" class="primary-button">Upload Floor Plan</button>
-                                    </form>
-                                </article>
-                                
                                 <article class="setup-step" data-setup-step="bathrooms">
-                                    <h2>Step 4: Mark Restrooms</h2>
+                                    <h2>Step 3: Mark Restrooms</h2>
                                     <p class="setup-description">
                                     Place every restroom on its floor plan and assign the right custodian to finish
                                     setup.
@@ -168,16 +150,22 @@
                                                 <input name="name" required />
                                             </label>
                                             <label>
-                                                Type
-                                                <select name="type" required>
-                                                    <option value="stall">Stall</option>
-                                                    <option value="single">Single</option>
-                                                    <option value="family">Family</option>
-                                                </select>
-                                            </label>
-                                            <label>
                                                 Sensor Identifier
                                                 <input name="sensor" required />
+                                            </label>
+                                        </div>
+                                        <div class="two-column">
+                                            <label>
+                                                Type
+                                                <select name="type" id="bathroom-type-select" required>
+                                                    <option value="single-stall">Single Stall</option>
+                                                    <option value="accessible">Accessible</option>
+                                                    <option value="multi-stall">Multi-Stall</option>
+                                                </select>
+                                            </label>
+                                            <label id="bathroom-stalls-field" class="hidden">
+                                                Total Stalls
+                                                <input name="stalls" type="number" min="1" />
                                             </label>
                                         </div>
                                         <button type="submit" class="primary-button">Register Bathroom</button>
@@ -187,6 +175,13 @@
                         </div>
                     </section>
                     
+                    
+                    <section class="panel" data-manager-panel>
+                        <div class="panel-header">
+                            <h2>Overview</h2>
+                        </div>
+                        <div id="manager-overview" class="status-summary"></div>
+                    </section>
                     
                     <section class="panel" data-manager-panel>
                         <div class="panel-header">
