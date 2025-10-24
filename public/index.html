@@ -251,11 +251,47 @@
                 
                 <section id="janitor-view" class="view-panel hidden">
                     <section class="panel">
-                        <h2>Personalized Route</h2>
-                        <div class="route-controls">
-                            <label>
-                                Current Floor
-                                <select id="route-floor-select"></select>
-                            </label>
-                            <button id="refresh-route" class="secondary-button">Refresh Route</button>
-                            
+                       <h2>Today's Status</h2>
+                        <div id="janitor-status-summary" class="status-summary" aria-live="polite"></div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Personalized Route</h2>
+                            <div class="route-controls">
+                                <label>
+                                    Current Floor
+                                    <select id="route-floor-select"></select>
+                                </label>
+                                <button id="refresh-route" class="secondary-button">Refresh Route</button>
+                            </div>
+                        </div>
+                        <div id="route-map" class="route-map" aria-live="polite"></div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Restrooms on This Floor</h2>
+                            <div class="route-controls">
+                                <label>
+                                    Floor
+                                    <select id="restroom-floor-select"></select>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="restroom-list" class="restroom-list" aria-live="polite"></div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Your Upcoming Shifts</h2>
+                            <button id="toggle-schedule" class="secondary-button">View All Upcoming Shifts</button>
+                        </div>
+                        <div id="schedule-cards" class="schedule-cards"></div>
+                    </section>
+                </section>
+
+            </main>
+        </div>
+    </body>
+</html>
