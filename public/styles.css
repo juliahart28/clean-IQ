@@ -53,6 +53,7 @@ button {
     word-wrap: normal;
     direction: ltr;
     -webkit-font-feature-settings: "liga";
+    font-feature-settings: "liga";
     -webkit-font-smoothing: antialiased;
 }
 
@@ -72,11 +73,11 @@ button {
 }
 
 .brand-clean {
-    color: var(--brand-navy);
+    color: var(--brand-blue);
 }
 
 .brand-iq {
-    color: var(--brand-blue);
+    color: var(--brand-gold);
 }
 
 .brand-large {
@@ -944,5 +945,4 @@ td {
     .header-left {
         gap: 12px;
     }
-}
-
+}}}

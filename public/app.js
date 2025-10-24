@@ -11,49 +11,98 @@ const state = {
     showAllShifts: false
 };
 
-const selectors = {
-    app: document.getElementById("app"),
-    loginScreen: document.getElementById("login-screen"),
-    loginForm: document.getElementById("login-form"),
-    roleTabs: document.getElementById("role-tabs"),
-    managerView: document.getElementById("manager-view"),
-    managerSetup: document.getElementById("manager-setup"),
-    managerPanels: Array.from(document.querySelectorAll("[data-manager-panel]")),
-    janitorView: document.getElementById("janitor-view"),
-    janitorStatusSummary: document.getElementById("janitor-status-summary"),
-    filterBuilding: document.getElementById("filter-building"),
-    filterFloor: document.getElementById("filter-floor"),
-    filterEmployee: document.getElementById("filter-employee"),
-    filterStatus: document.getElementById("filter-status"),
-    bathroomTableBody: document.querySelector("#bathroom-table tbody"),
-    staffGrid: document.getElementById("staff-grid"),
-    scheduleCards: document.getElementById("schedule-cards"),
-    toggleSchedule: document.getElementById("toggle-schedule"),
-    routeFloorSelect: document.getElementById("route-floor-select"),
-    restroomFloorSelect: document.getElementById("restroom-floor-select"),
-    routeMap: document.getElementById("route-map"),
-    restroomList: document.getElementById("restroom-list"),
-    refreshRoute: document.getElementById("refresh-route"),
-    profileButton: document.getElementById("profile-button"),
-    profilePopover: document.getElementById("profile-popover"),
-    profileEmail: document.getElementById("profile-email"),
-    logoutButton: document.getElementById("logout-button"),
-    addEmployeeForm: document.getElementById("add-employee-form"),
-    employeeBuildingSelect: document.getElementById("employee-building-select"),
-    addBuildingForm: document.getElementById("add-building-form"),
-    bathroomBuildingSelect: document.getElementById("bathroom-building-select"),
-    addBathroomForm: document.getElementById("add-bathroom-form"),
-    editScheduleButton: document.getElementById("edit-schedule-button"),
-    addShiftButton: document.getElementById("add-shift-button"),
-    scheduleModal: document.getElementById("schedule-modal"),
-    closeScheduleModal: document.getElementById("close-schedule-modal"),
-    addShiftForm: document.getElementById("add-shift-form"),
-    shiftEmployeeSelect: document.getElementById("shift-employee"),
-    shiftBuildingSelect: document.getElementById("shift-building"),
-    floorPlanForm: document.getElementById("add-floorplan-form"),
-    floorPlanBuildingSelect: document.getElementById("floorplan-building-select"),
-    setupProgress: document.getElementById("setup-progress")
-};
+function ready(cb) {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", cb);
+    } else cb();
+}
+
+function setText(el, val = "") {
+    if (!el) return console.warn("setText(): target is null");
+    el.textContent = String(val);
+}
+
+function clear(el) {
+    if (!el) return console.warn("clear(): target is null");
+    while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function append(el, ...children) {
+    if (!el) return console.warn("append(): target is null");
+    children.forEach(c => el.appendChild(c));
+}
+
+function el(tag, attrs = {}, text) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+        if (v == null) continue;
+        if (k === "class") node.className = v;
+        else if (k.startsWith("data-")) node.setAttribute(k, v);
+        else node[k] = v;
+    }
+    if (text != null) setText(node, text);
+    return node;
+}
+
+const selectors = {};
+let setupStepElements = new Map();
+
+function initializeDomReferences() {
+    Object.assign(selectors, {
+        app: document.getElementById("app"),
+        loginScreen: document.getElementById("login-screen"),
+        loginForm: document.getElementById("login-form"),
+        roleTabs: document.getElementById("role-tabs"),
+        managerView: document.getElementById("manager-view"),
+        managerSetup: document.getElementById("manager-setup"),
+        managerPanels: Array.from(document.querySelectorAll("[data-manager-panel]")),
+        janitorView: document.getElementById("janitor-view"),
+        janitorStatusSummary: document.getElementById("janitor-status-summary"),
+        filterBuilding: document.getElementById("filter-building"),
+        filterFloor: document.getElementById("filter-floor"),
+        filterEmployee: document.getElementById("filter-employee"),
+        filterStatus: document.getElementById("filter-status"),
+        bathroomTableBody: document.querySelector("#bathroom-table tbody"),
+        staffGrid: document.getElementById("staff-grid"),
+        scheduleCards: document.getElementById("schedule-cards"),
+        toggleSchedule: document.getElementById("toggle-schedule"),
+        routeFloorSelect: document.getElementById("route-floor-select"),
+        restroomFloorSelect: document.getElementById("restroom-floor-select"),
+        routeMap: document.getElementById("route-map"),
+        restroomList: document.getElementById("restroom-list"),
+        refreshRoute: document.getElementById("refresh-route"),
+        profileButton: document.getElementById("profile-button"),
+        profilePopover: document.getElementById("profile-popover"),
+        profileEmail: document.getElementById("profile-email"),
+        logoutButton: document.getElementById("logout-button"),
+        addEmployeeForm: document.getElementById("add-employee-form"),
+        employeeBuildingSelect: document.getElementById("employee-building-select"),
+        addBuildingForm: document.getElementById("add-building-form"),
+        bathroomBuildingSelect: document.getElementById("bathroom-building-select"),
+        addBathroomForm: document.getElementById("add-bathroom-form"),
+        editScheduleButton: document.getElementById("edit-schedule-button"),
+        addShiftButton: document.getElementById("add-shift-button"),
+        scheduleModal: document.getElementById("schedule-modal"),
+        closeScheduleModal: document.getElementById("close-schedule-modal"),
+        addShiftForm: document.getElementById("add-shift-form"),
+        shiftEmployeeSelect: document.getElementById("shift-employee"),
+        shiftBuildingSelect: document.getElementById("shift-building"),
+        floorPlanForm: document.getElementById("add-floorplan-form"),
+        floorPlanBuildingSelect: document.getElementById("floorplan-building-select"),
+        setupProgress: document.getElementById("setup-progress")
+    });
+
+    setupStepElements = new Map(
+        Array.from(document.querySelectorAll("[data-setup-step]")).map(element => [
+            element.dataset.setupStep,
+            element
+        ])
+    );
+
+    for (const [key, value] of Object.entries(selectors)) {
+        if (!value) console.warn(`Missing DOM node for selectors.${key}`);
+    }
+}
 
 const setupSequence = ["employees", "buildings", "floorplans", "bathrooms"];
 const setupStepLabels = {
@@ -62,12 +111,6 @@ const setupStepLabels = {
     floorplans: "Upload Floor Plans",
     bathrooms: "Mark Restrooms"
 };
-const setupStepElements = new Map(
-                                  Array.from(document.querySelectorAll("[data-setup-step]")).map(element => [
-                                      element.dataset.setupStep,
-                                      element
-                                  ])
-                                  );
 
 function fetchJSON(url, options = {}) {
     const headers = options.headers || {};
@@ -200,7 +243,7 @@ function updateSetupFlow() {
     
     if (setupComplete) {
         if (selectors.setupProgress) {
-            selectors.setupProgress.textContent = "";
+            setText(selectors.setupProgress, "");
         }
         return;
     }
@@ -214,9 +257,9 @@ function updateSetupFlow() {
     
     if (selectors.setupProgress) {
         const currentStep = setupSequence[firstIncompleteIndex];
-        selectors.setupProgress.textContent = `Step ${firstIncompleteIndex + 1} of ${
+        setText(selectors.setupProgress, `Step ${firstIncompleteIndex + 1} of ${
       setupSequence.length
-    } • ${setupStepLabels[currentStep] || ""}`;
+    } • ${setupStepLabels[currentStep] || ""}`);
     }
 }
 
@@ -260,6 +303,9 @@ function formatDateRange(start, end) {
 }
 
 function closeProfilePopover() {
+        if (!selectors.profilePopover) {
+        return;
+    }
     selectors.profilePopover.classList.add("hidden");
 }
 
@@ -276,25 +322,18 @@ function populateBuildingSelects() {
         if (!select) {
             continue;
         }
-        select.innerHTML = "";
+        clear(select);
         for (const building of buildings) {
-            const option = document.createElement("option");
-            option.value = building.id;
-            option.textContent = building.name;
-            select.append(option);
+            append(select, el("option", { value: building.id }, building.name));
         }
     }
     
-    selectors.filterBuilding.innerHTML = "";
-    const allOption = document.createElement("option");
-    allOption.value = "";
-    allOption.textContent = "All Buildings";
-    selectors.filterBuilding.append(allOption);
-    for (const building of buildings) {
-        const option = document.createElement("option");
-        option.value = building.id;
-        option.textContent = building.name;
-        selectors.filterBuilding.append(option);
+    if (selectors.filterBuilding) {
+        clear(selectors.filterBuilding);
+        append(selectors.filterBuilding, el("option", { value: "" }, "All Buildings"));
+        for (const building of buildings) {
+            append(selectors.filterBuilding, el("option", { value: building.id }, building.name));
+        }
     }
     
     populateFilterFloors();
@@ -302,11 +341,12 @@ function populateBuildingSelects() {
 }
 
 function populateFilterFloors() {
-    selectors.filterFloor.innerHTML = "";
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "All Floors";
-    selectors.filterFloor.append(option);
+    if (!selectors.filterFloor || !selectors.filterBuilding) {
+        return;
+    }
+
+    clear(selectors.filterFloor);
+    append(selectors.filterFloor, el("option", { value: "" }, "All Floors"));
     
     const buildingId = selectors.filterBuilding.value;
     if (!buildingId) {
@@ -314,55 +354,53 @@ function populateFilterFloors() {
     }
     const floors = getFloorsForBuilding(buildingId);
     for (const floor of floors) {
-        const floorOption = document.createElement("option");
-        floorOption.value = String(floor.number);
-        floorOption.textContent = floor.name;
-        selectors.filterFloor.append(floorOption);
+        append(selectors.filterFloor, el("option", { value: String(floor.number) }, floor.name));
     }
 }
 
 function populateEmployeeFilters() {
-    selectors.filterEmployee.innerHTML = "";
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "All Staff";
-    selectors.filterEmployee.append(option);
-    
-    for (const employee of getAllEmployees()) {
-        const employeeOption = document.createElement("option");
-        employeeOption.value = employee.id;
-        employeeOption.textContent = employee.name;
-        selectors.filterEmployee.append(employeeOption);
+        if (selectors.filterEmployee) {
+        clear(selectors.filterEmployee);
+        append(selectors.filterEmployee, el("option", { value: "" }, "All Staff"));
+
+        for (const employee of getAllEmployees()) {
+            append(selectors.filterEmployee, el("option", { value: employee.id }, employee.name));
+        }
     }
     
-    selectors.shiftEmployeeSelect.innerHTML = "";
-    for (const employee of getAllEmployees()) {
-        const employeeOption = document.createElement("option");
-        employeeOption.value = employee.id;
-        employeeOption.textContent = `${employee.name} (${employee.role})`;
-        selectors.shiftEmployeeSelect.append(employeeOption);
+        if (selectors.shiftEmployeeSelect) {
+        clear(selectors.shiftEmployeeSelect);
+        for (const employee of getAllEmployees()) {
+            append(
+                selectors.shiftEmployeeSelect,
+                el("option", { value: employee.id }, `${employee.name} (${employee.role})`)
+            );
+        }
     }
 }
 
 function populateShiftModalDefaults() {
-    if (!selectors.shiftBuildingSelect.value && selectors.shiftBuildingSelect.options.length > 0) {
+    if (selectors.shiftBuildingSelect && !selectors.shiftBuildingSelect.value && selectors.shiftBuildingSelect.options.length > 0) {
         selectors.shiftBuildingSelect.selectedIndex = 0;
     }
-    if (!selectors.shiftEmployeeSelect.value && selectors.shiftEmployeeSelect.options.length > 0) {
+    if (selectors.shiftEmployeeSelect && !selectors.shiftEmployeeSelect.value && selectors.shiftEmployeeSelect.options.length > 0) {
         selectors.shiftEmployeeSelect.selectedIndex = 0;
     }
 }
 
 function renderBathroomTable() {
+        if (!selectors.bathroomTableBody) {
+        return;
+    }
     const bathrooms = getAllBathrooms();
     const filters = {
-        building: selectors.filterBuilding.value,
-        floor: selectors.filterFloor.value,
-        employee: selectors.filterEmployee.value,
-        status: selectors.filterStatus.value
+        building: selectors.filterBuilding ? selectors.filterBuilding.value : "",
+        floor: selectors.filterFloor ? selectors.filterFloor.value : "",
+        employee: selectors.filterEmployee ? selectors.filterEmployee.value : "",
+        status: selectors.filterStatus ? selectors.filterStatus.value : ""
     };
     
-    selectors.bathroomTableBody.innerHTML = "";
+    clear(selectors.bathroomTableBody);
     
     const filtered = bathrooms.filter(bathroom => {
         if (filters.building && bathroom.buildingId !== filters.building) {
@@ -384,11 +422,11 @@ function renderBathroomTable() {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
         cell.colSpan = 6;
-        cell.textContent = "No bathrooms match the selected filters.";
+        setText(cell, "No bathrooms match the selected filters.");
         cell.style.textAlign = "center";
         cell.style.color = "var(--muted)";
-        row.append(cell);
-        selectors.bathroomTableBody.append(row);
+        append(row, cell);
+        append(selectors.bathroomTableBody, row);
         return;
     }
     
@@ -399,50 +437,54 @@ function renderBathroomTable() {
         const row = document.createElement("tr");
         
         const nameCell = document.createElement("td");
-        nameCell.textContent = bathroom.name;
-        row.append(nameCell);
+        setText(nameCell, bathroom.name);
+        append(row, nameCell);
         
         const buildingCell = document.createElement("td");
-        buildingCell.textContent = getBuildingName(bathroom.buildingId);
-        row.append(buildingCell);
+        setText(nameCell, bathroom.name);
+        append(row, nameCell);
         
         const floorCell = document.createElement("td");
-        floorCell.textContent = bathroom.floorName || `Floor ${bathroom.floorNumber}`;
-        row.append(floorCell);
+        setText(floorCell, bathroom.floorName || `Floor ${bathroom.floorNumber}`);
+        append(row, floorCell);
         
         const employeeCell = document.createElement("td");
         const assigned = bathroom.assignedEmployeeId
         ? employeeById.get(bathroom.assignedEmployeeId)
         : null;
-        employeeCell.textContent = assigned ? assigned.name : "Unassigned";
-        row.append(employeeCell);
+        setText(employeeCell, assigned ? assigned.name : "Unassigned");
+        append(row, employeeCell);
         
         const scoreCell = document.createElement("td");
-        scoreCell.textContent = `${bathroom.score}`;
-        row.append(scoreCell);
+        setText(scoreCell, `${bathroom.score}`);
+        append(row, scoreCell);
         
         const alertCell = document.createElement("td");
         if (bathroom.alerts && bathroom.alerts.length > 0) {
-            alertCell.append(
-                             ...bathroom.alerts.map(message => {
-                                 const pill = document.createElement("span");
-                                 pill.className = "alert-pill";
-                                 pill.textContent = message;
-                                 return pill;
-                             })
-                             );
+            append(
+                alertCell,
+                ...bathroom.alerts.map(message => {
+                    const pill = document.createElement("span");
+                    pill.className = "alert-pill";
+                    setText(pill, message);
+                    return pill;
+                })
+            );
         } else {
-            alertCell.textContent = "—";
+            setText(alertCell, "—");
             alertCell.style.color = "var(--muted)";
         }
-        row.append(alertCell);
-        
-        selectors.bathroomTableBody.append(row);
+        append(row, alertCell);
+
+        append(selectors.bathroomTableBody, row);
     }
 }
 
 function renderStaffGrid() {
-    selectors.staffGrid.innerHTML = "";
+    if (!selectors.staffGrid) {
+        return;
+    }
+    clear(selectors.staffGrid);
     const employees = getAllEmployees();
     const buildingLookup = new Map(getAllBuildings().map(building => [building.id, building.name]));
     
@@ -482,15 +524,15 @@ function renderStaffGrid() {
         info.className = "staff-info";
         
         const name = document.createElement("h3");
-        name.textContent = employee.name;
-        info.append(name);
+        setText(name, employee.name);
+        append(info, name);
         
         const meta = document.createElement("div");
         meta.className = "badge-outline";
-        meta.textContent = `${employee.role} • ${buildingLookup.get(employee.assignedBuildingId) || "Unassigned"}`;
-        info.append(meta);
-        
-        card.append(info);
+        setText(meta, `${employee.role} • ${buildingLookup.get(employee.assignedBuildingId) || "Unassigned"}`);
+        append(info, meta);
+
+        append(card, info);
         
         const shiftLine = document.createElement("div");
         shiftLine.className = "shift-line";
@@ -498,28 +540,31 @@ function renderStaffGrid() {
         if (shifts.length === 0) {
             const empty = document.createElement("span");
             empty.className = "shift-item shift-item--empty";
-            empty.textContent = "No scheduled shifts";
-            shiftLine.append(empty);
+            setText(empty, "No scheduled shifts");
+            append(shiftLine, empty);
         } else {
             for (const shift of shifts.slice(0, 4)) {
                 const item = document.createElement("span");
                 item.className = "shift-item";
-                item.textContent = `${formatDateRange(shift.startTime, shift.endTime)} • ${getBuildingName(
+                setText(item, `${formatDateRange(shift.startTime, shift.endTime)} • ${getBuildingName(
           shift.buildingId
-        )} • Floor ${shift.floorNumber}`;
-                shiftLine.append(item);
+        )} • Floor ${shift.floorNumber}`);
+                append(shiftLine, item);
             }
         }
         
-        card.append(shiftLine);
-        
-        selectors.staffGrid.append(card);
+        append(card, shiftLine);
+
+        append(selectors.staffGrid, card);
     }
 }
 
 function renderScheduleCards() {
+        if (!selectors.scheduleCards) {
+        return;
+    }
     if (!state.currentUser) {
-        selectors.scheduleCards.innerHTML = "";
+        clear(selectors.scheduleCards);
         return;
     }
     const userShifts = state.shifts
@@ -528,12 +573,12 @@ function renderScheduleCards() {
     
     const visibleShifts = state.showAllShifts ? userShifts : userShifts.slice(0, 3);
     
-    selectors.scheduleCards.innerHTML = "";
+    clear(selectors.scheduleCards);
     if (visibleShifts.length === 0) {
         const emptyState = document.createElement("p");
-        emptyState.textContent = "No upcoming shifts assigned.";
+        setText(emptyState, "No upcoming shifts assigned.");
         emptyState.style.color = "var(--muted)";
-        selectors.scheduleCards.append(emptyState);
+        append(selectors.scheduleCards, emptyState);
         return;
     }
     
@@ -542,20 +587,22 @@ function renderScheduleCards() {
         card.className = "schedule-card";
         
         const title = document.createElement("h3");
-        title.textContent = `${getBuildingName(shift.buildingId)} • Floor ${shift.floorNumber}`;
-        card.append(title);
+        setText(title, `${getBuildingName(shift.buildingId)} • Floor ${shift.floorNumber}`);
+        append(card, title);
         
         const time = document.createElement("time");
         time.dateTime = shift.startTime;
-        time.textContent = formatDateRange(shift.startTime, shift.endTime);
-        card.append(time);
-        
-        selectors.scheduleCards.append(card);
+        setText(time, formatDateRange(shift.startTime, shift.endTime));
+        append(card, time);
+
+        append(selectors.scheduleCards, card);
     }
-    
-    selectors.toggleSchedule.textContent = state.showAllShifts
-    ? "Show Next Three Shifts"
-    : "View All Upcoming Shifts";
+
+    if (selectors.toggleSchedule) {
+        setText(selectors.toggleSchedule, state.showAllShifts
+        ? "Show Next Three Shifts"
+        : "View All Upcoming Shifts");
+    }
 }
 
 function hazardFromAlerts(alerts) {
@@ -577,7 +624,7 @@ function renderJanitorSummary() {
         return;
     }
 
-    selectors.janitorStatusSummary.innerHTML = "";
+    clear(selectors.janitorStatusSummary);
 
     if (!state.currentUser) {
         return;
@@ -588,8 +635,8 @@ function renderJanitorSummary() {
     if (bathrooms.length === 0) {
         const emptyState = document.createElement("p");
         emptyState.className = "status-empty";
-        emptyState.textContent = "No restrooms are assigned to your building yet.";
-        selectors.janitorStatusSummary.append(emptyState);
+        setText(emptyState, "No restrooms are assigned to your building yet.");
+        append(selectors.janitorStatusSummary, emptyState);
         return;
     }
 
@@ -629,41 +676,46 @@ function renderJanitorSummary() {
 
         const circle = document.createElement("span");
         circle.className = `status-circle ${key}`;
-        circle.textContent = data.count;
+        setText(circle, data.count);
         circle.setAttribute("aria-hidden", "true");
-        card.append(circle);
+        append(card, circle)
 
         const meta = document.createElement("div");
         meta.className = "status-meta";
 
         const label = document.createElement("span");
         label.className = "status-label";
-        label.textContent = data.label;
-        meta.append(label);
+        setText(label, data.label);
+        append(meta, label);
 
         const count = document.createElement("span");
         count.className = "status-count";
-        count.textContent = `${data.count} ${data.count === 1 ? "Restroom" : "Restrooms"}`;
-        meta.append(count);
+        setText(count, `${data.count} ${data.count === 1 ? "Restroom" : "Restrooms"}`);
+        append(meta, count);
 
         const helper = document.createElement("span");
         helper.className = "status-helper";
-        helper.textContent = data.helper;
-        meta.append(helper);
+        setText(helper, data.helper);
+        append(meta, helper);
 
-        card.append(meta);
-        selectors.janitorStatusSummary.append(card);
+        append(card, meta);
+        append(selectors.janitorStatusSummary, card);
     });
 }
 
 async function renderRouteMap() {
-    selectors.routeMap.innerHTML = "";
-    if (!state.currentUser) {
+    if (!selectors.routeMap) {
+        return;
+    }
+    clear(selectors.routeMap);
+    delete selectors.routeMap.dataset.error;
+
+    if (!state.currentUser || !selectors.routeFloorSelect) {
         return;
     }
     const floorValue = selectors.routeFloorSelect.value;
     if (!floorValue) {
-        selectors.routeMap.innerHTML = "<p>Select your current floor to load priorities.</p>";
+        append(selectors.routeMap, el("p", {}, "Select your current floor to load priorities."));
         return;
     }
     
@@ -677,7 +729,7 @@ async function renderRouteMap() {
         });
         const bathrooms = response.bathrooms || [];
         if (bathrooms.length === 0) {
-            selectors.routeMap.innerHTML = "<p>No bathrooms require service on this floor.</p>";
+            append(selectors.routeMap, el("p", {}, "No bathrooms require service on this floor."));
             return;
         }
         
@@ -690,53 +742,58 @@ async function renderRouteMap() {
             
             const number = document.createElement("span");
             number.className = "route-number";
-            number.textContent = index + 1;
-            circle.append(number);
+            setText(number, index + 1);
+            append(circle, number);
             
             const hazard = hazardFromAlerts(bathroom.alerts);
             if (hazard) {
                 const hazardBadge = document.createElement("span");
                 hazardBadge.className = "route-hazard";
-                hazardBadge.innerHTML = `<span class="material-symbol">warning</span>`;
+                clear(hazardBadge);
+                append(hazardBadge, el("span", { class: "material-symbol" }, "warning"));
                 hazardBadge.title = hazard.detail;
-                circle.append(hazardBadge);
+                append(circle, hazardBadge);
             }
             
             const label = document.createElement("div");
             label.className = "route-label";
             
             const name = document.createElement("strong");
-            name.textContent = bathroom.name;
-            label.append(name);
+            setText(name, bathroom.name);
+            append(label, name);
             
             const score = document.createElement("span");
-            score.textContent = `Score: ${bathroom.score}`;
-            label.append(score);
+            setText(score, `Score: ${bathroom.score}`);
+            append(label, score);
             
             if (bathroom.alerts && bathroom.alerts.length > 0) {
                 const alerts = document.createElement("span");
                 alerts.className = "route-alert";
-                alerts.textContent = bathroom.alerts.join(" • ");
-                label.append(alerts);
+                setText(alerts, bathroom.alerts.join(" • "));
+                append(label, alerts);
             }
             
-            node.append(circle, label);
-            selectors.routeMap.append(node);
+            append(node, circle, label);
+            append(selectors.routeMap, node);
         });
     } catch (error) {
-        selectors.routeMap.innerHTML = `<p class="error">Unable to load route: ${error.message}</p>`;
+        append(selectors.routeMap, el("p", { class: "error" }, `Unable to load route: ${error.message}`));
+        selectors.routeMap.dataset.error = "true";
     }
 }
 
 function renderRestroomList() {
-    selectors.restroomList.innerHTML = "";
-    if (!state.currentUser) {
+    if (!selectors.restroomList) {
+        return;
+    }
+        clear(selectors.restroomList);
+    if (!state.currentUser || !selectors.restroomFloorSelect) {
         return;
     }
     
     const floorValue = selectors.restroomFloorSelect.value;
     if (!floorValue) {
-        selectors.restroomList.innerHTML = "<p>Select a floor to view restrooms.</p>";
+        append(selectors.restroomList, el("p", {}, "Select a floor to view restrooms."));
         return;
     }
     
@@ -747,7 +804,7 @@ function renderRestroomList() {
                                                );
     
     if (bathrooms.length === 0) {
-        selectors.restroomList.innerHTML = "<p>No restrooms registered on this floor.</p>";
+        append(selectors.restroomList, el("p", {}, "No restrooms registered on this floor."));
         return;
     }
     
@@ -763,41 +820,42 @@ function renderRestroomList() {
         header.style.justifyContent = "space-between";
         
         const title = document.createElement("h3");
-        title.textContent = bathroom.name;
+        setText(title, bathroom.name);
         title.style.margin = "0";
-        header.append(title);
+        append(header, title);
         
         const badge = document.createElement("span");
         badge.className = `badge status-badge ${categoryKey(bathroom.category)}`;
-        badge.textContent = bathroom.category;
-        header.append(badge);
-        card.append(header);
+        setText(badge, bathroom.category);
+        append(header, badge);
+        append(card, header);
         
         const score = document.createElement("p");
-        score.textContent = `Cleanliness Score: ${bathroom.score}`;
+        setText(score, `Cleanliness Score: ${bathroom.score}`);
         score.style.margin = "0";
-        card.append(score);
+        append(card, score);
         
         if (bathroom.alerts.length > 0) {
             const alerts = document.createElement("div");
-            alerts.append(
-                          ...bathroom.alerts.map(message => {
-                              const pill = document.createElement("span");
-                              pill.className = "alert-pill";
-                              pill.textContent = message;
-                              return pill;
-                          })
-                          );
-            card.append(alerts);
+            append(
+                alerts,
+                ...bathroom.alerts.map(message => {
+                    const pill = document.createElement("span");
+                    pill.className = "alert-pill";
+                    setText(pill, message);
+                    return pill;
+                })
+            );
+            append(card, alerts);
         }
         
         const button = document.createElement("button");
         button.className = "primary-button";
-        button.textContent = "Mark As Cleaned";
+        setText(button, "Mark As Cleaned");
         button.addEventListener("click", () => markRestroomClean(bathroom));
-        card.append(button);
-        
-        selectors.restroomList.append(card);
+        append(card, button);
+
+        append(selectors.restroomList, card);
     });
 }
 
@@ -826,7 +884,7 @@ async function markRestroomClean(bathroom) {
         renderRestroomList();
         renderBathroomTable();
         renderJanitorSummary();
-        if (!selectors.routeMap.innerHTML.includes("Unable")) {
+        if (selectors.routeMap && selectors.routeMap.dataset.error !== "true") {
             renderRouteMap();
         }
     } catch (error) {
@@ -835,21 +893,25 @@ async function markRestroomClean(bathroom) {
 }
 
 function updateProfileDetails() {
-    if (!state.currentUser) {
-        selectors.profileEmail.textContent = "";
+        if (!selectors.profileEmail) {
         return;
     }
-    selectors.profileEmail.textContent = state.currentUser.email;
+    if (!state.currentUser) {
+        setText(selectors.profileEmail, "");
+        return;
+    }
+    setText(selectors.profileEmail, state.currentUser.email);
 }
 
 function updateRouteFloorOptions() {
-    selectors.routeFloorSelect.innerHTML = "";
-    selectors.restroomFloorSelect.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Select Floor";
-    selectors.routeFloorSelect.append(placeholder.cloneNode(true));
-    selectors.restroomFloorSelect.append(placeholder.cloneNode(true));
+    if (!selectors.routeFloorSelect || !selectors.restroomFloorSelect) {
+        return;
+    }
+
+    clear(selectors.routeFloorSelect);
+    clear(selectors.restroomFloorSelect);
+    append(selectors.routeFloorSelect, el("option", { value: "" }, "Select Floor"));
+    append(selectors.restroomFloorSelect, el("option", { value: "" }, "Select Floor"));
     
     if (!state.currentUser) {
         return;
@@ -857,11 +919,9 @@ function updateRouteFloorOptions() {
     
     const floors = getFloorsForBuilding(state.currentUser.assignedBuildingId);
     floors.forEach(floor => {
-        const option = document.createElement("option");
-        option.value = String(floor.number);
-        option.textContent = floor.name;
-        selectors.routeFloorSelect.append(option.cloneNode(true));
-        selectors.restroomFloorSelect.append(option);
+        const option = el("option", { value: String(floor.number) }, floor.name);
+        append(selectors.routeFloorSelect, option.cloneNode(true));
+        append(selectors.restroomFloorSelect, option);
     });
     
     if (floors.length > 0) {
@@ -897,6 +957,9 @@ async function initializeData() {
 }
 
 function setRoleView(role) {
+        if (!selectors.managerView || !selectors.janitorView || !selectors.roleTabs) {
+        return;
+    }
     const isManager = role === "Manager";
     selectors.managerView.classList.toggle("hidden", !isManager);
     selectors.janitorView.classList.toggle("hidden", isManager);
@@ -918,107 +981,145 @@ function handleRoleTabClick(event) {
 }
 
 function openScheduleModal() {
+        if (!selectors.scheduleModal) {
+        return;
+    }
     selectors.scheduleModal.classList.remove("hidden");
 }
 
 function closeScheduleModal() {
-    selectors.scheduleModal.classList.add("hidden");
-    selectors.addShiftForm.reset();
+    if (selectors.scheduleModal) {
+        selectors.scheduleModal.classList.add("hidden");
+    }
+    if (selectors.addShiftForm) {
+        selectors.addShiftForm.reset();
+    }
     populateShiftModalDefaults();
 }
 
 function registerEventListeners() {
-    selectors.roleTabs.addEventListener("click", handleRoleTabClick);
-    
-    selectors.filterBuilding.addEventListener("change", () => {
-        populateFilterFloors();
-        renderBathroomTable();
-    });
-    selectors.filterFloor.addEventListener("change", renderBathroomTable);
-    selectors.filterEmployee.addEventListener("change", renderBathroomTable);
-    selectors.filterStatus.addEventListener("change", renderBathroomTable);
-    
-    selectors.toggleSchedule.addEventListener("click", () => {
-        state.showAllShifts = !state.showAllShifts;
-        renderScheduleCards();
-    });
-    
-    selectors.refreshRoute.addEventListener("click", renderRouteMap);
-    selectors.routeFloorSelect.addEventListener("change", renderRouteMap);
-    selectors.restroomFloorSelect.addEventListener("change", renderRestroomList);
-    
-    selectors.profileButton.addEventListener("click", () => {
-        selectors.profilePopover.classList.toggle("hidden");
-    });
+    if (selectors.roleTabs) {
+        selectors.roleTabs.addEventListener("click", handleRoleTabClick);
+    }
+
+    if (selectors.filterBuilding) {
+        selectors.filterBuilding.addEventListener("change", () => {
+            populateFilterFloors();
+            renderBathroomTable();
+        });
+    }
+    if (selectors.filterFloor) {
+        selectors.filterFloor.addEventListener("change", renderBathroomTable);
+    }
+    if (selectors.filterEmployee) {
+        selectors.filterEmployee.addEventListener("change", renderBathroomTable);
+    }
+    if (selectors.filterStatus) {
+        selectors.filterStatus.addEventListener("change", renderBathroomTable);
+    }
+
+    if (selectors.toggleSchedule) {
+        selectors.toggleSchedule.addEventListener("click", () => {
+            state.showAllShifts = !state.showAllShifts;
+            renderScheduleCards();
+        });
+    }
+
+    if (selectors.refreshRoute) {
+        selectors.refreshRoute.addEventListener("click", renderRouteMap);
+    }
+    if (selectors.routeFloorSelect) {
+        selectors.routeFloorSelect.addEventListener("change", renderRouteMap);
+    }
+    if (selectors.restroomFloorSelect) {
+        selectors.restroomFloorSelect.addEventListener("change", renderRestroomList);
+    }
+
+    if (selectors.profileButton) {
+        selectors.profileButton.addEventListener("click", () => {
+            if (selectors.profilePopover) {
+                selectors.profilePopover.classList.toggle("hidden");
+            }
+        });
+    }
     
     document.addEventListener("click", event => {
+                if (!selectors.profilePopover || !selectors.profileButton) {
+            return;
+        }
         if (
             !selectors.profilePopover.contains(event.target) &&
             !selectors.profileButton.contains(event.target)
-            ) {
-                closeProfilePopover();
+        ) {
+            closeProfilePopover();
             }
-    });
-    
-    selectors.logoutButton.addEventListener("click", () => {
-        state.currentUser = null;
-        state.showAllShifts = false;
-        selectors.app.classList.add("hidden");
-        selectors.loginScreen.classList.remove("hidden");
-        closeProfilePopover();
-        renderJanitorSummary();
-    });
-    
-    selectors.addEmployeeForm.addEventListener("submit", event => {
-        event.preventDefault();
-        const formData = new FormData(selectors.addEmployeeForm);
-        const name = formData.get("name").trim();
-        const email = formData.get("email").trim();
-        const role = formData.get("role");
-        const building = formData.get("building") || null;
-        
-        if (!name || !email) {
-            return;
-        }
-        
-        const newEmployee = {
-            id: `custom-emp-${Date.now()}`,
-            name,
-            email,
-            role,
-            assignedBuildingId: building
-        };
-        
-        state.customEmployees.push(newEmployee);
-        populateEmployeeFilters();
-        renderStaffGrid();
-        updateSetupFlow();
-        selectors.addEmployeeForm.reset();
-    });
-    
-    selectors.addBuildingForm.addEventListener("submit", event => {
-        event.preventDefault();
-        const formData = new FormData(selectors.addBuildingForm);
-        const name = formData.get("name").trim();
-        const address = formData.get("address").trim();
-        const floors = Number(formData.get("floors")) || 1;
-        
-        if (!name) {
-            return;
-        }
-        
-        const newBuilding = {
-            id: `custom-bldg-${Date.now()}`,
-            name,
-            address,
-            floors
-        };
-        
-        state.customBuildings.push(newBuilding);
-        populateBuildingSelects();
-        updateSetupFlow();
-        selectors.addBuildingForm.reset();
-    });
+        });
+
+    if (selectors.logoutButton && selectors.app && selectors.loginScreen) {
+        selectors.logoutButton.addEventListener("click", () => {
+            state.currentUser = null;
+            state.showAllShifts = false;
+            selectors.app.classList.add("hidden");
+            selectors.loginScreen.classList.remove("hidden");
+            closeProfilePopover();
+            renderJanitorSummary();
+        });
+    }
+
+    if (selectors.addEmployeeForm) {
+        selectors.addEmployeeForm.addEventListener("submit", event => {
+            event.preventDefault();
+            const formData = new FormData(selectors.addEmployeeForm);
+            const name = formData.get("name").trim();
+            const email = formData.get("email").trim();
+            const role = formData.get("role");
+            const building = formData.get("building") || null;
+
+            if (!name || !email) {
+                return;
+            }
+
+            const newEmployee = {
+                id: `custom-emp-${Date.now()}`,
+                name,
+                email,
+                role,
+                assignedBuildingId: building
+            };
+
+            state.customEmployees.push(newEmployee);
+            populateEmployeeFilters();
+            renderStaffGrid();
+            updateSetupFlow();
+            selectors.addEmployeeForm.reset();
+        });
+    }
+
+    if (selectors.addBuildingForm) {
+        selectors.addBuildingForm.addEventListener("submit", event => {
+            event.preventDefault();
+            const formData = new FormData(selectors.addBuildingForm);
+            const name = formData.get("name").trim();
+            const address = formData.get("address").trim();
+            const floors = Number(formData.get("floors")) || 1;
+
+            if (!name) {
+                return;
+            }
+
+            const newBuilding = {
+                id: `custom-bldg-${Date.now()}`,
+                name,
+                address,
+                floors
+            };
+
+            state.customBuildings.push(newBuilding);
+            populateBuildingSelects();
+            updateSetupFlow();
+            selectors.addBuildingForm.reset();
+        });
+    }
     
     if (selectors.floorPlanForm) {
         selectors.floorPlanForm.addEventListener("submit", event => {
@@ -1050,123 +1151,140 @@ function registerEventListeners() {
     }
     
     
-    selectors.addBathroomForm.addEventListener("submit", event => {
-        event.preventDefault();
-        const formData = new FormData(selectors.addBathroomForm);
-        const buildingId = formData.get("building");
-        const floor = Number(formData.get("floor"));
-        const name = formData.get("name").trim();
-        const type = formData.get("type");
-        const sensor = formData.get("sensor").trim();
-        
-        if (!buildingId || Number.isNaN(floor) || !name) {
-            return;
-        }
-        
-        const newBathroom = {
-            id: `custom-bathroom-${Date.now()}`,
-            buildingId,
-            buildingName: getBuildingName(buildingId),
-            floorNumber: floor,
-            floorName: `Floor ${floor}`,
-            name,
-            type,
-            sensorId: sensor,
-            numUses: 0,
-            soapLevel: "ok",
-            toiletPaperLevel: "ok",
-            score: 100,
-            category: "Clean",
-            alerts: [],
-            assignedEmployeeId: null,
-            isCustom: true
-        };
-        
-        state.customBathrooms.push(newBathroom);
-        renderBathroomTable();
-        renderRestroomList();
-        renderJanitorSummary();
-        updateSetupFlow();
-        selectors.addBathroomForm.reset();
-    });
-    
-    selectors.editScheduleButton.addEventListener("click", openScheduleModal);
-    selectors.addShiftButton.addEventListener("click", openScheduleModal);
-    selectors.closeScheduleModal.addEventListener("click", closeScheduleModal);
-    selectors.scheduleModal.addEventListener("click", event => {
-        if (event.target === selectors.scheduleModal) {
-            closeScheduleModal();
-        }
-    });
-    
-    selectors.addShiftForm.addEventListener("submit", async event => {
-        event.preventDefault();
-        const formData = new FormData(selectors.addShiftForm);
-        const payload = {
-            employeeId: formData.get("employeeId"),
-            startTime: formData.get("startTime"),
-            endTime: formData.get("endTime"),
-            buildingId: formData.get("buildingId"),
-            floorNumber: formData.get("floorNumber")
-        };
-        
-        try {
-            const created = await fetchJSON("/api/shifts", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-            state.shifts.push(created);
-            renderStaffGrid();
-            renderScheduleCards();
-            closeScheduleModal();
-        } catch (error) {
-            alert(`Unable to add shift: ${error.message}`);
-        }
-    });
+        if (selectors.addBathroomForm) {
+        selectors.addBathroomForm.addEventListener("submit", event => {
+            event.preventDefault();
+            const formData = new FormData(selectors.addBathroomForm);
+            const buildingId = formData.get("building");
+            const floor = Number(formData.get("floor"));
+            const name = formData.get("name").trim();
+            const type = formData.get("type");
+            const sensor = formData.get("sensor").trim();
+
+            if (!buildingId || Number.isNaN(floor) || !name) {
+                return;
+            }
+
+            const newBathroom = {
+                id: `custom-bathroom-${Date.now()}`,
+                buildingId,
+                buildingName: getBuildingName(buildingId),
+                floorNumber: floor,
+                floorName: `Floor ${floor}`,
+                name,
+                type,
+                sensorId: sensor,
+                numUses: 0,
+                soapLevel: "ok",
+                toiletPaperLevel: "ok",
+                score: 100,
+                category: "Clean",
+                alerts: [],
+                assignedEmployeeId: null,
+                isCustom: true
+            };
+
+            state.customBathrooms.push(newBathroom);
+            renderBathroomTable();
+            renderRestroomList();
+            renderJanitorSummary();
+            updateSetupFlow();
+            selectors.addBathroomForm.reset();
+        });
+    }
+    if (selectors.editScheduleButton) {
+        selectors.editScheduleButton.addEventListener("click", openScheduleModal); 
+    }
+    if (selectors.addShiftButton) {
+        selectors.addShiftButton.addEventListener("click", openScheduleModal);
+    }
+    if (selectors.closeScheduleModal) {
+        selectors.closeScheduleModal.addEventListener("click", closeScheduleModal);
+    }
+    if (selectors.scheduleModal) {
+        selectors.scheduleModal.addEventListener("click", event => {
+            if (event.target === selectors.scheduleModal) {
+                closeScheduleModal();
+            }
+        });
+    }
+
+    if (selectors.addShiftForm) {
+        selectors.addShiftForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const formData = new FormData(selectors.addShiftForm);
+            const payload = {
+                employeeId: formData.get("employeeId"),
+                startTime: formData.get("startTime"),
+                endTime: formData.get("endTime"),
+                buildingId: formData.get("buildingId"),
+                floorNumber: formData.get("floorNumber")
+            };
+
+            try {
+                const created = await fetchJSON("/api/shifts", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                state.shifts.push(created);
+                renderStaffGrid();
+                renderScheduleCards();
+                closeScheduleModal();
+            } catch (error) {
+                alert(`Unable to add shift: ${error.message}`);
+            }
+        });
+    }
+
+    if (selectors.loginForm) {
+        selectors.loginForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const formData = new FormData(selectors.loginForm);
+            const email = formData.get("email").trim();
+            const password = formData.get("password");
+
+            if (!email || !password) {
+                return;
+            }
+
+            try {
+                if (state.employees.length === 0 && state.baseBathrooms.length === 0) {
+                    await initializeData();
+                }
+
+                const employee = getAllEmployees().find(emp => emp.email.toLowerCase() === email.toLowerCase());
+
+                if (!employee) {
+                    alert("No account found for that email.");
+                    return;
+                }
+
+                state.currentUser = employee;
+                if (selectors.loginScreen) {
+                    selectors.loginScreen.classList.add("hidden");
+                }
+                if (selectors.app) {
+                    selectors.app.classList.remove("hidden");
+                }
+                updateProfileDetails();
+                populateEmployeeFilters();
+                renderBathroomTable();
+                renderStaffGrid();
+                updateRouteFloorOptions();
+                renderRouteMap();
+                renderRestroomList();
+                renderScheduleCards();
+                renderJanitorSummary();
+                updateSetupFlow();
+                setRoleView(employee.role);
+            } catch (error) {
+                alert(`Unable to sign in: ${error.message}`);
+            }
+        });
+    }
 }
 
-selectors.loginForm.addEventListener("submit", async event => {
-    event.preventDefault();
-    const formData = new FormData(selectors.loginForm);
-    const email = formData.get("email").trim();
-    const password = formData.get("password");
-    
-    if (!email || !password) {
-        return;
-    }
-    
-    try {
-        if (state.employees.length === 0 && state.baseBathrooms.length === 0) {
-            await initializeData();
-        }
-        
-        const employee = getAllEmployees().find(emp => emp.email.toLowerCase() === email.toLowerCase());
-        
-        if (!employee) {
-            alert("No account found for that email.");
-            return;
-        }
-        
-        state.currentUser = employee;
-        selectors.loginScreen.classList.add("hidden");
-        selectors.app.classList.remove("hidden");
-        updateProfileDetails();
-        populateEmployeeFilters();
-        renderBathroomTable();
-        renderStaffGrid();
-        updateRouteFloorOptions();
-        renderRouteMap();
-        renderRestroomList();
-        renderScheduleCards();
-        renderJanitorSummary();
-        updateSetupFlow();
-        setRoleView(employee.role);
-    } catch (error) {
-        alert(`Unable to sign in: ${error.message}`);
-    }
-});
-
-(async function boot() {
+async function init() {
     try {
         await initializeData();
         populateEmployeeFilters();
@@ -1176,4 +1294,9 @@ selectors.loginForm.addEventListener("submit", async event => {
         console.warn("Bootstrap failed", error);
     }
     registerEventListeners();
-})();
+}
+
+ready(() => {
+    initializeDomReferences();
+    init().catch(error => console.error("Init failed", error));
+});
