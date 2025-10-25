@@ -176,72 +176,94 @@
                     </section>
                     
                     
-                    <section class="panel" data-manager-panel>
-                        <div class="panel-header">
-                            <h2>Overview</h2>
-                        </div>
-                        <div id="manager-overview" class="status-summary"></div>
+                    <section id="manager-dashboard" class="view-panel">
+                        <section class="panel" data-manager-panel>
+                            <div class="panel-header">
+                                <h2>Overview</h2>
+                                <button id="open-bathroom-directory" class="secondary-button">All Bathrooms</button>
+                            </div>
+                            <div id="manager-overview" class="status-summary"></div>
+                        </section>
+
+                        <section class="panel" data-manager-panel>
+                            <div class="panel-header">
+                                <h2>Staffing &amp; Schedules</h2>
+                                <div class="actions">
+                                    <button id="edit-schedule-button" class="secondary-button">
+                                        <span class="material-symbol">edit_calendar</span>
+                                        Edit Schedule
+                                    </button>
+                                    <button id="add-shift-button" class="icon-button" aria-label="Add shift">
+                                        <span class="material-symbol">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="staff-grid" id="staff-grid"></div>
+                        </section>
                     </section>
                     
-                    <section class="panel" data-manager-panel>
-                        <div class="panel-header">
+                    <section id="bathroom-directory-view" class="view-panel hidden">
+                        <div class="page-header">
+                            <button id="back-to-dashboard" class="secondary-button">Back to Dashboard</button>
                             <h2>All Bathrooms</h2>
-                            <div class="filter-row">
-                                <label>
-                                    Building
-                                    <select id="filter-building"></select>
-                                </label>
-                                <label>
-                                    Floor
-                                    <select id="filter-floor"></select>
-                                </label>
-                                <label>
-                                    Assigned Employee
-                                    <select id="filter-employee"></select>
-                                </label>
-                                <label>
-                                    Status
-                                    <select id="filter-status">
-                                        <option value="">All</option>
-                                        <option value="clean">Clean</option>
-                                        <option value="needs-attention">Needs Attention</option>
-                                        <option value="urgent">Urgent</option>
-                                    </select>
-                                </label>
+                        </div>
+                        <section class="panel">
+                            <div class="panel-header">
+                                <h3>Directory</h3>
+                                <div class="filter-row">
+                                    <label>
+                                        Building
+                                        <select id="filter-building"></select>
+                                    </label>
+                                    <label>
+                                        Floor
+                                        <select id="filter-floor"></select>
+                                    </label>
+                                    <label>
+                                        Assigned Employee
+                                        <select id="filter-employee"></select>
+                                    </label>
+                                    <label>
+                                        Status
+                                        <select id="filter-status">
+                                            <option value="">All</option>
+                                            <option value="clean">Clean</option>
+                                            <option value="needs-attention">Needs Attention</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="table-wrapper">
-                            <table id="bathroom-table">
-                                <thead>
-                                    <tr>
-                                        <th>Bathroom</th>
-                                        <th>Building</th>
-                                        <th>Floor</th>
-                                        <th>Assigned To</th>
-                                        <th>Score</th>
-                                        <th>Alerts</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </section>
-                    
-                    <section class="panel" data-manager-panel>
-                        <div class="panel-header">
-                            <h2>Staffing &amp; Schedules</h2>
-                            <div class="actions">
-                                <button id="edit-schedule-button" class="secondary-button">
-                                    <span class="material-symbol">edit_calendar</span>
-                                    Edit Schedule
-                                </button>
-                                <button id="add-shift-button" class="icon-button" aria-label="Add shift">
-                                    <span class="material-symbol">add</span>
-                                </button>
+                            <div class="table-wrapper">
+                                <table id="bathroom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Bathroom</th>
+                                            <th>Building</th>
+                                            <th>Floor</th>
+                                            <th>Assigned To</th>
+                                            <th>Score</th>
+                                            <th>Alerts</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="staff-grid" id="staff-grid"></div>
+                        </section>
                     </section>
+
+                    <section id="bathroom-detail-view" class="view-panel hidden">
+                            <button id="back-to-bathrooms" class="secondary-button">Back to All Bathrooms</button>
+                            <h2 id="bathroom-detail-name"></h2>
+                        </div>
+                        <section class="panel bathroom-detail">
+                            <div class="detail-score" id="bathroom-detail-score"></div>
+                            <div class="detail-meta" id="bathroom-detail-meta"></div>
+                            <div class="detail-dispensers" id="bathroom-detail-dispensers"></div>
+                            <div class="detail-notes" id="bathroom-detail-alerts"></div>
+                        </section>
+                    </section>
+
                 </section>
                 
                 <section id="janitor-view" class="view-panel hidden">

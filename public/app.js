@@ -8,7 +8,8 @@ const state = {
     customBuildings: [],
     floorPlans: [],
     currentUser: null,
-    showAllShifts: false
+    showAllShifts: false,
+    selectedBathroomId: null
 };
 
 function ready(cb) {
@@ -58,11 +59,22 @@ function initializeDomReferences() {
         managerPanels: Array.from(document.querySelectorAll("[data-manager-panel]")),
         janitorView: document.getElementById("janitor-view"),
         janitorStatusSummary: document.getElementById("janitor-status-summary"),
+        managerDashboard: document.getElementById("manager-dashboard"),
+        bathroomDirectoryView: document.getElementById("bathroom-directory-view"),
+        bathroomDetailView: document.getElementById("bathroom-detail-view"),
         filterBuilding: document.getElementById("filter-building"),
         filterFloor: document.getElementById("filter-floor"),
         filterEmployee: document.getElementById("filter-employee"),
         filterStatus: document.getElementById("filter-status"),
         bathroomTableBody: document.querySelector("#bathroom-table tbody"),
+        openBathroomDirectory: document.getElementById("open-bathroom-directory"),
+        backToDashboard: document.getElementById("back-to-dashboard"),
+        backToBathrooms: document.getElementById("back-to-bathrooms"),
+        bathroomDetailName: document.getElementById("bathroom-detail-name"),
+        bathroomDetailScore: document.getElementById("bathroom-detail-score"),
+        bathroomDetailMeta: document.getElementById("bathroom-detail-meta"),
+        bathroomDetailDispensers: document.getElementById("bathroom-detail-dispensers"),
+        bathroomDetailAlerts: document.getElementById("bathroom-detail-alerts"),
         staffGrid: document.getElementById("staff-grid"),
         scheduleCards: document.getElementById("schedule-cards"),
         toggleSchedule: document.getElementById("toggle-schedule"),
@@ -278,13 +290,24 @@ function updateSetupFlow() {
     selectors.managerPanels.forEach(panel => {
         panel.classList.toggle("hidden", !setupComplete);
     });
-    
+        if (selectors.managerDashboard) {
+        selectors.managerDashboard.classList.toggle("hidden", !setupComplete);
+    }
     if (setupComplete) {
+        showManagerDashboard();
         if (selectors.setupProgress) {
             setText(selectors.setupProgress, "");
         }
         return;
     }
+
+    if (selectors.bathroomDirectoryView) {
+        selectors.bathroomDirectoryView.classList.add("hidden");
+    }
+    if (selectors.bathroomDetailView) {
+        selectors.bathroomDetailView.classList.add("hidden");
+    }
+    state.selectedBathroomId = null;
     
     setupSequence.forEach((step, index) => {
         const element = setupStepElements.get(step);
@@ -324,6 +347,248 @@ function categoryFromScore(score) {
         return "Needs Attention";
     }
     return "Clean";
+}
+
+function findBathroomById(id) {
+    if (!id) {
+        return null;
+    }
+    return getAllBathrooms().find(bathroom => bathroom.id === id) || null;
+}
+
+function formatLastCleaned(bathroom) {
+    if (!bathroom) {
+        return "Not recorded";
+    }
+
+    if (bathroom.lastCleanedAt) {
+        const parsed = new Date(bathroom.lastCleanedAt);
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short"
+            });
+        }
+    }
+
+    const minutesAgo = Number(bathroom.lastCleanedMinutesAgo);
+    if (Number.isFinite(minutesAgo)) {
+        if (minutesAgo <= 1) {
+            return "1 minute ago";
+        }
+        return `${minutesAgo} minutes ago`;
+    }
+
+    if (bathroom.lastCleaned) {
+        return bathroom.lastCleaned;
+    }
+
+    return "Not recorded";
+}
+
+function estimateUses(bathroom) {
+    if (!bathroom) {
+        return 0;
+    }
+
+    const doorEvents = Number(bathroom.doorOpenEvents);
+    if (Number.isFinite(doorEvents) && doorEvents >= 0) {
+        return Math.floor(doorEvents / 2);
+    }
+
+    const uses = Number(bathroom.numUses);
+    if (Number.isFinite(uses) && uses >= 0) {
+        return Math.floor(uses);
+    }
+
+    return 0;
+}
+
+function describeConsumableLevel(level, label) {
+    const normalized = level ? String(level).toLowerCase() : "";
+    switch (normalized) {
+        case "ok":
+            return `${label} Level: OK`;
+        case "low":
+            return `${label} Level: Low`;
+        case "empty":
+            return `${label} Level: Empty`;
+        default:
+            return `${label} Status Unknown`;
+    }
+}
+
+function deriveDispenserSerial(bathroom, type) {
+    if (!bathroom) {
+        return "Unavailable";
+    }
+
+    const key = type === "soap" ? "soapDispenserSerial" : "paperDispenserSerial";
+    if (bathroom[key]) {
+        return bathroom[key];
+    }
+
+    if (Array.isArray(bathroom.dispensers)) {
+        const dispenser = bathroom.dispensers.find(entry => entry?.type === type);
+        if (dispenser?.serial) {
+            return dispenser.serial;
+        }
+    }
+
+    const fallback = bathroom.sensorId || bathroom.sensor || bathroom.id || "000000";
+    const slug = String(fallback)
+        .replace(/[^a-z0-9]/gi, "")
+        .toUpperCase()
+        .slice(-6);
+    const suffix = slug || "000000";
+    return `${type === "soap" ? "SOAP" : "PAPR"}-${suffix}`;
+}
+
+function showManagerDashboard() {
+    if (selectors.managerDashboard) {
+        selectors.managerDashboard.classList.remove("hidden");
+    }
+    if (selectors.bathroomDirectoryView) {
+        selectors.bathroomDirectoryView.classList.add("hidden");
+    }
+    if (selectors.bathroomDetailView) {
+        selectors.bathroomDetailView.classList.add("hidden");
+    }
+    state.selectedBathroomId = null;
+}
+
+function showBathroomDirectory() {
+    if (selectors.managerDashboard) {
+        selectors.managerDashboard.classList.add("hidden");
+    }
+    if (selectors.bathroomDirectoryView) {
+        selectors.bathroomDirectoryView.classList.remove("hidden");
+    }
+    if (selectors.bathroomDetailView) {
+        selectors.bathroomDetailView.classList.add("hidden");
+    }
+    state.selectedBathroomId = null;
+    renderBathroomTable();
+}
+
+function showBathroomDetail(bathroomId) {
+    if (!bathroomId) {
+        return;
+    }
+    state.selectedBathroomId = bathroomId;
+    if (selectors.managerDashboard) {
+        selectors.managerDashboard.classList.add("hidden");
+    }
+    if (selectors.bathroomDirectoryView) {
+        selectors.bathroomDirectoryView.classList.add("hidden");
+    }
+    if (selectors.bathroomDetailView) {
+        selectors.bathroomDetailView.classList.remove("hidden");
+    }
+    renderBathroomDetail();
+}
+
+function renderBathroomDetail() {
+    if (!selectors.bathroomDetailName) {
+        return;
+    }
+
+    const bathroom = findBathroomById(state.selectedBathroomId);
+
+    if (!bathroom) {
+        setText(selectors.bathroomDetailName, "Bathroom Not Found");
+        if (selectors.bathroomDetailScore) {
+            clear(selectors.bathroomDetailScore);
+        }
+        if (selectors.bathroomDetailMeta) {
+            clear(selectors.bathroomDetailMeta);
+            append(
+                selectors.bathroomDetailMeta,
+                el("p", { class: "status-helper" }, "Select a bathroom from the directory to see details.")
+            );
+        }
+        if (selectors.bathroomDetailDispensers) {
+            clear(selectors.bathroomDetailDispensers);
+        }
+        if (selectors.bathroomDetailAlerts) {
+            clear(selectors.bathroomDetailAlerts);
+        }
+        return;
+    }
+
+    setText(selectors.bathroomDetailName, bathroom.name || "Unnamed Bathroom");
+
+    if (selectors.bathroomDetailScore) {
+        clear(selectors.bathroomDetailScore);
+        const numericScore = Number(bathroom.score);
+        const scoreText = Number.isFinite(numericScore) ? numericScore : "—";
+        const statusKey = categoryKey(bathroom.category) || "clean";
+        const scoreValue = el("span", { class: "detail-score-value" }, scoreText);
+        const badge = el(
+            "span",
+            { class: `badge detail-score-badge ${statusKey}` },
+            bathroom.category || categoryFromScore(numericScore)
+        );
+        append(selectors.bathroomDetailScore, scoreValue, badge);
+    }
+
+    if (selectors.bathroomDetailMeta) {
+        clear(selectors.bathroomDetailMeta);
+        const lastCleaned = el("p");
+        append(lastCleaned, el("strong", {}, "Last Cleaned:"));
+        append(lastCleaned, document.createTextNode(` ${formatLastCleaned(bathroom)}`));
+        const usesValue = estimateUses(bathroom);
+        const usesLabel = usesValue === 1 ? "1 use" : `${usesValue} uses`;
+        const uses = el("p");
+        append(uses, el("strong", {}, "Estimated Uses:"));
+        append(uses, document.createTextNode(` ${usesLabel}`));
+        append(selectors.bathroomDetailMeta, lastCleaned, uses);
+    }
+
+    if (selectors.bathroomDetailDispensers) {
+        clear(selectors.bathroomDetailDispensers);
+        const dispensers = [
+            {
+                type: "soap",
+                label: "Soap Dispenser",
+                level: bathroom.soapLevel
+            },
+            {
+                type: "paper",
+                label: "Toilet Paper Dispenser",
+                level: bathroom.toiletPaperLevel,
+                extra: Number.isFinite(Number(bathroom.lowPaperStalls)) && Number(bathroom.lowPaperStalls) > 0
+                    ? `${Number(bathroom.lowPaperStalls)} stall${Number(bathroom.lowPaperStalls) === 1 ? "" : "s"} low on paper`
+                    : null
+            }
+        ];
+
+        dispensers.forEach(({ type, label, level, extra }) => {
+            const card = el("article", { class: "dispenser-card" });
+            append(card, el("h3", {}, label));
+            append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(level, label)));
+            if (extra) {
+                append(card, el("p", { class: "status-helper" }, extra));
+            }
+            append(card, el("span", { class: "dispenser-serial" }, `Serial: ${deriveDispenserSerial(bathroom, type)}`));
+            append(selectors.bathroomDetailDispensers, card);
+        });
+    }
+
+    if (selectors.bathroomDetailAlerts) {
+        clear(selectors.bathroomDetailAlerts);
+        if (bathroom.alerts && bathroom.alerts.length > 0) {
+            append(
+                selectors.bathroomDetailAlerts,
+                ...bathroom.alerts.map(message => el("span", { class: "alert-pill" }, message))
+            );
+        } else {
+            append(
+                selectors.bathroomDetailAlerts,
+                el("p", { class: "status-helper" }, "No active alerts for this restroom.")
+            );
+        }
+    }
 }
 
 function formatDateRange(start, end) {
@@ -440,9 +705,10 @@ function populateShiftModalDefaults() {
 }
 
 function renderBathroomTable() {
-        if (!selectors.bathroomTableBody) {
+    if (!selectors.bathroomTableBody) {
         return;
     }
+
     const bathrooms = getAllBathrooms();
     const filters = {
         building: selectors.filterBuilding ? selectors.filterBuilding.value : "",
@@ -453,21 +719,51 @@ function renderBathroomTable() {
     
     clear(selectors.bathroomTableBody);
     
-    const filtered = bathrooms.filter(bathroom => {
-        if (filters.building && bathroom.buildingId !== filters.building) {
-            return false;
-        }
-        if (filters.floor && String(bathroom.floorNumber) !== filters.floor) {
-            return false;
-        }
-        if (filters.employee && bathroom.assignedEmployeeId !== filters.employee) {
-            return false;
-        }
-        if (filters.status && categoryKey(bathroom.category) !== filters.status) {
-            return false;
-        }
-        return true;
-    });
+    const filtered = bathrooms
+        .filter(bathroom => {
+            if (filters.building && bathroom.buildingId !== filters.building) {
+                return false;
+            }
+            if (filters.floor && String(bathroom.floorNumber) !== filters.floor) {
+                return false;
+            }
+            if (filters.employee && bathroom.assignedEmployeeId !== filters.employee) {
+                return false;
+            }
+            if (filters.status && categoryKey(bathroom.category) !== filters.status) {
+                return false;
+            }
+            return true;
+        })
+        .sort((a, b) => {
+            const buildingA = (a.buildingName || getBuildingName(a.buildingId) || "").toLowerCase();
+            const buildingB = (b.buildingName || getBuildingName(b.buildingId) || "").toLowerCase();
+            const buildingCompare = buildingA.localeCompare(buildingB, undefined, { sensitivity: "base" });
+            if (buildingCompare !== 0) {
+                return buildingCompare;
+            }
+
+            const floorA = Number(a.floorNumber);
+            const floorB = Number(b.floorNumber);
+            const floorCompare = (Number.isFinite(floorA) ? floorA : 0) - (Number.isFinite(floorB) ? floorB : 0);
+            if (floorCompare !== 0) {
+                return floorCompare;
+            }
+
+            const scoreA = Number(a.score);
+            const scoreB = Number(b.score);
+            if (Number.isFinite(scoreA) && Number.isFinite(scoreB) && scoreA !== scoreB) {
+                return scoreA - scoreB;
+            }
+            if (Number.isFinite(scoreA) && !Number.isFinite(scoreB)) {
+                return -1;
+            }
+            if (!Number.isFinite(scoreA) && Number.isFinite(scoreB)) {
+                return 1;
+            }
+
+            return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+        });
     
     if (filtered.length === 0) {
         const row = document.createElement("tr");
@@ -486,28 +782,42 @@ function renderBathroomTable() {
     
     for (const bathroom of filtered) {
         const row = document.createElement("tr");
+        row.classList.add("clickable-row");
+        row.dataset.bathroomId = bathroom.id;
+        row.tabIndex = 0;
+
+        row.addEventListener("click", () => showBathroomDetail(bathroom.id));
+        row.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                showBathroomDetail(bathroom.id);
+            }
+        });
         
         const nameCell = document.createElement("td");
         setText(nameCell, bathroom.name);
         append(row, nameCell);
         
         const buildingCell = document.createElement("td");
-        setText(nameCell, bathroom.name);
-        append(row, nameCell);
+        const buildingName = bathroom.buildingName || getBuildingName(bathroom.buildingId) || "Unknown";
+        setText(buildingCell, buildingName);
+        append(row, buildingCell);
         
         const floorCell = document.createElement("td");
-        setText(floorCell, bathroom.floorName || `Floor ${bathroom.floorNumber}`);
+        const floorLabel = bathroom.floorName || (Number.isFinite(Number(bathroom.floorNumber))
+            ? `Floor ${bathroom.floorNumber}`
+            : "—");
+        setText(floorCell, floorLabel);
         append(row, floorCell);
         
         const employeeCell = document.createElement("td");
-        const assigned = bathroom.assignedEmployeeId
-        ? employeeById.get(bathroom.assignedEmployeeId)
-        : null;
+        const assigned = bathroom.assignedEmployeeId ? employeeById.get(bathroom.assignedEmployeeId) : null;
         setText(employeeCell, assigned ? assigned.name : "Unassigned");
         append(row, employeeCell);
         
         const scoreCell = document.createElement("td");
-        setText(scoreCell, `${bathroom.score}`);
+        const numericScore = Number(bathroom.score);
+        setText(scoreCell, Number.isFinite(numericScore) ? numericScore : "—");
         append(row, scoreCell);
         
         const alertCell = document.createElement("td");
@@ -528,6 +838,14 @@ function renderBathroomTable() {
         append(row, alertCell);
 
         append(selectors.bathroomTableBody, row);
+    }
+
+    if (
+        selectors.bathroomDetailView &&
+        !selectors.bathroomDetailView.classList.contains("hidden") &&
+        state.selectedBathroomId
+    ) {
+        renderBathroomDetail();
     }
 }
 
@@ -996,6 +1314,9 @@ async function markRestroomClean(bathroom) {
         renderBathroomTable();
         renderJanitorSummary();
         renderManagerOverview();
+        if (state.selectedBathroomId === bathroom.id) {
+            renderBathroomDetail();
+        }
         return;
     }
     
@@ -1011,6 +1332,9 @@ async function markRestroomClean(bathroom) {
         renderBathroomTable();
         renderJanitorSummary();
         renderManagerOverview();
+        if (state.selectedBathroomId === bathroom.id) {
+            renderBathroomDetail();
+        }
         if (selectors.routeMap && selectors.routeMap.dataset.error !== "true") {
             renderRouteMap();
         }
@@ -1091,6 +1415,12 @@ function setRoleView(role) {
     const isManager = role === "Manager";
     selectors.managerView.classList.toggle("hidden", !isManager);
     selectors.janitorView.classList.toggle("hidden", isManager);
+
+    if (isManager) {
+        showManagerDashboard();
+    } else {
+        state.selectedBathroomId = null;
+    }
     
     for (const tab of selectors.roleTabs.querySelectorAll(".role-tab")) {
         tab.classList.toggle("active", tab.dataset.role === (isManager ? "manager" : "janitor"));
@@ -1185,6 +1515,16 @@ function registerEventListeners() {
         selectors.roleTabs.addEventListener("click", handleRoleTabClick);
     }
 
+    if (selectors.openBathroomDirectory) {
+        selectors.openBathroomDirectory.addEventListener("click", showBathroomDirectory);
+    }
+    if (selectors.backToDashboard) {
+        selectors.backToDashboard.addEventListener("click", showManagerDashboard);
+    }
+    if (selectors.backToBathrooms) {
+        selectors.backToBathrooms.addEventListener("click", showBathroomDirectory);
+    }
+
     if (selectors.filterBuilding) {
         selectors.filterBuilding.addEventListener("change", () => {
             populateFilterFloors();
@@ -1242,6 +1582,7 @@ function registerEventListeners() {
         selectors.logoutButton.addEventListener("click", () => {
             state.currentUser = null;
             state.showAllShifts = false;
+            state.selectedBathroomId = null;
             selectors.app.classList.add("hidden");
             selectors.loginScreen.classList.remove("hidden");
             closeProfilePopover();
