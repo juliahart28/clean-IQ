@@ -16,9 +16,9 @@ export const bathrooms = [
     assignedEmployeeId: "emp-1",
     numUses: 3,
     soapLevel: "ok",
-     toiletPaperLevel: "low",
+    toiletPaperLevel: null,
     stalls: 3,
-    lowPaperStalls: null
+    lowPaperStalls: 1
   },
   {
     id: "bldg-1-floor-1-west-single",
