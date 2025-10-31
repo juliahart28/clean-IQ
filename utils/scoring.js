@@ -69,6 +69,23 @@ function computeSingleOrAccessibleScore(bathroom) {
   return finalizeScore(score, alerts);
 }
 
+function parseNonNegativeInteger(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor(number));
+}
+
+function clampCount(value, max) {
+  const parsed = parseNonNegativeInteger(value);
+  if (!Number.isFinite(max)) {
+    return parsed;
+  }
+  const ceiling = Math.max(0, Math.floor(max));
+  return Math.min(parsed, ceiling);
+}
+
 function computeMultiStallScore(bathroom) {
   const alerts = [];
 
@@ -84,10 +101,11 @@ function computeMultiStallScore(bathroom) {
   const rawStalls = Number(bathroom?.stalls);
   const stalls = Number.isFinite(rawStalls) && rawStalls >= 1 ? Math.floor(rawStalls) : 1;
 
-  const rawLowPaper = Number(bathroom?.lowPaperStalls);
-  const lowPaperStalls = Number.isFinite(rawLowPaper)
-    ? Math.min(stalls, Math.max(0, Math.floor(rawLowPaper)))
-    : 0;
+  const reportedLowPaper = parseNonNegativeInteger(bathroom?.lowPaperStalls);
+  const reportedNoPaper = parseNonNegativeInteger(bathroom?.noPaperStalls);
+  const lowPaperStalls = clampCount(reportedLowPaper, stalls);
+  const remainingPaperCapacity = Math.max(0, stalls - lowPaperStalls);
+  const noPaperStalls = Math.min(reportedNoPaper, remainingPaperCapacity);
 
   if (lowPaperStalls > 0) {
     alerts.push(
@@ -95,14 +113,41 @@ function computeMultiStallScore(bathroom) {
     );
   }
 
-  let score = 0;
-  if (stalls > 0) {
-    score = 5 * (uses / stalls) - 20 * (lowPaperStalls / stalls);
+   if (noPaperStalls > 0) {
+    alerts.push(
+      `${noPaperStalls} stall${noPaperStalls === 1 ? "" : "s"} out of paper`
+    );
   }
 
-  ({ score } = evaluateConsumables(score, alerts, bathroom?.soapLevel, bathroom?.toiletPaperLevel));
+  const totalSoapDispensers = parseNonNegativeInteger(bathroom?.soapDispensers);
+  const reportedLowSoap = parseNonNegativeInteger(bathroom?.lowSoapDispensers);
+  const reportedNoSoap = parseNonNegativeInteger(bathroom?.noSoapDispensers);
+  const soapCeiling = totalSoapDispensers > 0 ? totalSoapDispensers : reportedLowSoap + reportedNoSoap;
+  const lowSoapDispensers = clampCount(reportedLowSoap, soapCeiling);
+  const remainingSoapCapacity = Math.max(0, soapCeiling - lowSoapDispensers);
+  const noSoapDispensers = Math.min(reportedNoSoap, remainingSoapCapacity);
 
-  return finalizeScore(score, alerts);
+  if (lowSoapDispensers > 0) {
+    alerts.push(
+      `${lowSoapDispensers} soap dispenser${lowSoapDispensers === 1 ? "" : "s"} low`
+    );
+  }
+
+  if (noSoapDispensers > 0) {
+    alerts.push(
+      `${noSoapDispensers} soap dispenser${noSoapDispensers === 1 ? "" : "s"} empty`
+    );
+  }
+
+  let score = 100;
+  if (stalls > 0) {
+    score -= (5 * uses) / stalls;
+    score -= (10 * lowPaperStalls) / stalls;
+    score -= (25 * noPaperStalls) / stalls;
+  }
+
+  score -= 10 * lowSoapDispensers;
+  score -= 25 * noSoapDispensers;
 }
 
 export function computeScore(bathroom) {

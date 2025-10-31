@@ -18,7 +18,11 @@ export const bathrooms = [
     soapLevel: "ok",
     toiletPaperLevel: null,
     stalls: 3,
-    lowPaperStalls: 1
+    soapDispensers: 3,
+    lowPaperStalls: 1,
+    noPaperStalls: 0,
+    lowSoapDispensers: 1,
+    noSoapDispensers: 0
   },
   {
     id: "bldg-1-floor-1-west-single",
@@ -32,8 +36,12 @@ export const bathrooms = [
     numUses: 0,
     soapLevel: "ok",
     toiletPaperLevel: null,
-    stalls: null,
-    lowPaperStalls: 0
+    stalls: 1,
+    soapDispensers: 1,
+    lowPaperStalls: 0,
+    noPaperStalls: 0,
+    lowSoapDispensers: 0,
+    noSoapDispensers: 0
   },
   {
     id: "bldg-1-floor-2-north-family",
@@ -46,7 +54,13 @@ export const bathrooms = [
     assignedEmployeeId: "emp-1",
     numUses: 4,
     soapLevel: "low",
-    toiletPaperLevel: "ok"
+    toiletPaperLevel: "ok",
+    stalls: 1,
+    soapDispensers: 1,
+    lowPaperStalls: 0,
+    noPaperStalls: 0,
+    lowSoapDispensers: 1,
+    noSoapDispensers: 0
   },
   {
     id: "bldg-1-floor-2-south-stall",
@@ -61,7 +75,11 @@ export const bathrooms = [
     soapLevel: "ok",
     toiletPaperLevel: null,
     stalls: 5,
-    lowPaperStalls: 1
+    soapDispensers: 4,
+    lowPaperStalls: 1,
+    noPaperStalls: 1,
+    lowSoapDispensers: 1,
+    noSoapDispensers: 1
   },
   {
     id: "bldg-2-floor-1-lobby-stall",
@@ -76,7 +94,11 @@ export const bathrooms = [
     soapLevel: "low",
     toiletPaperLevel: null,
     stalls: 5,
-    lowPaperStalls: 0
+    soapDispensers: 5,
+    lowPaperStalls: 0,
+    noPaperStalls: 0,
+    lowSoapDispensers: 2,
+    noSoapDispensers: 0
   },
   {
     id: "bldg-2-floor-3-east-single",
@@ -91,7 +113,12 @@ export const bathrooms = [
     soapLevel: "empty",
     toiletPaperLevel: "low",
     stalls: null,
-    lowPaperStalls: null
+    stalls: 1,
+    soapDispensers: 1,
+    lowPaperStalls: 0,
+    noPaperStalls: 0,
+    lowSoapDispensers: 0,
+    noSoapDispensers: 1
   }
 ];
 
@@ -111,8 +138,11 @@ export function resetBathroom(id) {
 
     bathroom.numUses = 0;
     bathroom.soapLevel = "ok";
-    bathroom.toiletPaperLevel = "ok";    
+    bathroom.toiletPaperLevel = "ok";
     bathroom.lowPaperStalls = 0;
+    bathroom.noPaperStalls = 0;
+    bathroom.lowSoapDispensers = 0;
+    bathroom.noSoapDispensers = 0;
 
     return { ...bathroom };
   }

@@ -547,19 +547,42 @@ function renderBathroomDetail() {
 
     if (selectors.bathroomDetailDispensers) {
         clear(selectors.bathroomDetailDispensers);
+        const lowPaperValue = Number(bathroom.lowPaperStalls);
+        const noPaperValue = Number(bathroom.noPaperStalls);
+        const lowPaperStalls = Number.isFinite(lowPaperValue) ? lowPaperValue : 0;
+        const noPaperStalls = Number.isFinite(noPaperValue) ? noPaperValue : 0;
+        const paperAlerts = [];
+        if (lowPaperStalls > 0) {
+            paperAlerts.push(`${lowPaperStalls} stall${lowPaperStalls === 1 ? "" : "s"} low on paper`);
+        }
+        if (noPaperStalls > 0) {
+            paperAlerts.push(`${noPaperStalls} stall${noPaperStalls === 1 ? "" : "s"} out of paper`);
+        }
+
+        const lowSoapValue = Number(bathroom.lowSoapDispensers);
+        const noSoapValue = Number(bathroom.noSoapDispensers);
+        const lowSoapDispensers = Number.isFinite(lowSoapValue) ? lowSoapValue : 0;
+        const noSoapDispensers = Number.isFinite(noSoapValue) ? noSoapValue : 0;
+        const soapAlerts = [];
+        if (lowSoapDispensers > 0) {
+            soapAlerts.push(`${lowSoapDispensers} soap dispenser${lowSoapDispensers === 1 ? "" : "s"} low`);
+        }
+        if (noSoapDispensers > 0) {
+            soapAlerts.push(`${noSoapDispensers} soap dispenser${noSoapDispensers === 1 ? "" : "s"} empty`);
+        }
+
         const dispensers = [
             {
                 type: "soap",
                 label: "Soap Dispenser",
-                level: bathroom.soapLevel
+                level: bathroom.soapLevel,
+                extra: soapAlerts.length > 0 ? soapAlerts.join(" · ") : null
             },
             {
                 type: "paper",
                 label: "Toilet Paper Dispenser",
                 level: bathroom.toiletPaperLevel,
-                extra: Number.isFinite(Number(bathroom.lowPaperStalls)) && Number(bathroom.lowPaperStalls) > 0
-                    ? `${Number(bathroom.lowPaperStalls)} stall${Number(bathroom.lowPaperStalls) === 1 ? "" : "s"} low on paper`
-                    : null
+                extra: paperAlerts.length > 0 ? paperAlerts.join(" · ") : null
             }
         ];
 
