@@ -113,7 +113,7 @@ function computeMultiStallScore(bathroom) {
     );
   }
 
-   if (noPaperStalls > 0) {
+  if (noPaperStalls > 0) {
     alerts.push(
       `${noPaperStalls} stall${noPaperStalls === 1 ? "" : "s"} out of paper`
     );
@@ -148,9 +148,9 @@ function computeMultiStallScore(bathroom) {
 
   score -= 10 * lowSoapDispensers;
   score -= 25 * noSoapDispensers;
-}
 
   return finalizeScore(score, alerts);
+}
 
 export function computeScore(bathroom) {
   const type = bathroom?.type || "multi-stall";
