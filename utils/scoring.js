@@ -150,6 +150,8 @@ function computeMultiStallScore(bathroom) {
   score -= 25 * noSoapDispensers;
 }
 
+  return finalizeScore(score, alerts);
+
 export function computeScore(bathroom) {
   const type = bathroom?.type || "multi-stall";
 
