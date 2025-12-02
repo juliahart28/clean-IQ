@@ -6,7 +6,6 @@ const state = {
     shifts: [],
     organization: [],
     customBuildings: [],
-    floorPlans: [],
     currentUser: null,
     showAllShifts: false,
     selectedBathroomId: null
@@ -121,7 +120,6 @@ const setupSequence = ["employees", "buildings", "bathrooms"];
 const setupStepLabels = {
     employees: "Add Your Team",
     buildings: "Add Buildings",
-    floorplans: "Upload Floor Plans",
     bathrooms: "Mark Restrooms"
 };
 
@@ -205,13 +203,6 @@ function getFloorsForBuilding(buildingId) {
 
 function getAllBathrooms() {
     return [...state.baseBathrooms, ...state.customBathrooms];
-}
-
-function getFloorPlanForBuilding(buildingId) {
-    if (!buildingId) {
-        return null;
-    }
-    return state.floorPlans.find(plan => plan.buildingId === buildingId) || null;
 }
 
 function computeLocalBuildingAverages() {
@@ -898,7 +889,6 @@ function renderManagerOverview() {
             bathroomCount: 0
         };
 
-        const floorPlan = getFloorPlanForBuilding(building.id);
         const card = el("div", { class: "status-card" });
 
         const circleClass = `status-circle ${categoryKey(summary.category)}`;
@@ -914,32 +904,6 @@ function renderManagerOverview() {
         append(meta, el("span", { class: "status-helper" }, bathroomLabel));
 
         append(meta, el("span", { class: `badge ${categoryKey(summary.category)}` }, summary.category));
-
-        if (floorPlan) {
-            append(meta, el("span", { class: "status-helper" }, `Floor plan: ${floorPlan.fileName}`));
-        }
-
-        const button = el(
-            "button",
-            {
-                type: "button",
-                class: floorPlan ? "secondary-button" : "primary-button",
-                "data-floorplan-building": building.id
-            },
-            floorPlan ? "Edit Floor Plan" : "Add Floor Plan"
-        );
-        append(meta, button);
-
-        if (!floorPlan) {
-            const warning = el(
-                "p",
-                { class: "error" },
-                "No floor plan is uploaded. For best performance and accurate routing, we recommend uploading a floor plan."
-            );
-            warning.style.margin = "0";
-            warning.style.textAlign = "left";
-            append(meta, warning);
-        }
 
         append(card, meta);
         append(selectors.managerOverview, card);
@@ -1498,41 +1462,6 @@ function toggleStallsField() {
     }
 }
 
-function promptForFloorPlanUpload(buildingId) {
-    if (!buildingId) {
-        return;
-    }
-
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*,.pdf";
-
-    input.addEventListener("change", () => {
-        const file = input.files && input.files[0];
-        if (!file) {
-            return;
-        }
-
-        const fileName = file.name || `Floor Plan ${state.floorPlans.length + 1}`;
-        const existingIndex = state.floorPlans.findIndex(plan => plan.buildingId === buildingId);
-
-        if (existingIndex >= 0) {
-            const current = state.floorPlans[existingIndex];
-            state.floorPlans[existingIndex] = { ...current, fileName };
-        } else {
-            state.floorPlans.push({
-                id: `floorplan-${Date.now()}`,
-                buildingId,
-                fileName
-            });
-        }
-
-        renderManagerOverview();
-    });
-
-    input.click();
-}
-
 function registerEventListeners() {
     if (selectors.roleTabs) {
         selectors.roleTabs.addEventListener("click", handleRoleTabClick);
@@ -1615,17 +1544,6 @@ function registerEventListeners() {
 
        if (selectors.bathroomTypeSelect) {
         selectors.bathroomTypeSelect.addEventListener("change", toggleStallsField);
-    }
-
-    if (selectors.managerOverview) {
-        selectors.managerOverview.addEventListener("click", event => {
-            const button = event.target.closest("[data-floorplan-building]");
-            if (!button) {
-                return;
-            }
-            const buildingId = button.getAttribute("data-floorplan-building");
-            promptForFloorPlanUpload(buildingId);
-        });
     }
 
     if (selectors.addEmployeeForm) {
