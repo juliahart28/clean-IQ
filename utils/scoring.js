@@ -54,12 +54,25 @@ function finalizeScore(score, alerts) {
   return { score: rounded, category, alerts };
 }
 
+function deriveUsesFromDoor(bathroom) {
+  const rawDoorEvents = Number(bathroom?.doorOpenEvents);
+  if (Number.isFinite(rawDoorEvents) && rawDoorEvents >= 0) {
+    return Math.floor(rawDoorEvents / 2);
+  }
+
+  const fallbackUses = Number(bathroom?.numUses);
+  if (Number.isFinite(fallbackUses) && fallbackUses >= 0) {
+    return Math.floor(fallbackUses);
+  }
+
+  return 0;
+}
+
 function computeSingleOrAccessibleScore(bathroom) {
   let score = 100;
   const alerts = [];
 
-  const parsedUses = Number(bathroom?.numUses);
-  const uses = Number.isFinite(parsedUses) && parsedUses > 0 ? parsedUses : 0;
+  const uses = deriveUsesFromDoor(bathroom);
   if (uses > 0) {
     score -= uses * 10;
   }
@@ -89,23 +102,29 @@ function clampCount(value, max) {
 function computeMultiStallScore(bathroom) {
   const alerts = [];
 
-  const rawDoorEvents = Number(bathroom?.doorOpenEvents);
-  let uses;
-  if (Number.isFinite(rawDoorEvents)) {
-    uses = Math.max(0, Math.floor(rawDoorEvents / 2));
-  } else {
-    const fallbackUses = Number(bathroom?.numUses);
-    uses = Number.isFinite(fallbackUses) ? Math.max(0, Math.floor(fallbackUses)) : 0;
-  }
+  const uses = deriveUsesFromDoor(bathroom);
+
+  const paperDispensers = Array.isArray(bathroom?.paperDispensers)
+    ? bathroom.paperDispensers
+    : [];
+  const soapDispensers = Array.isArray(bathroom?.soapDispensers)
+    ? bathroom.soapDispensers
+    : [];
 
   const rawStalls = Number(bathroom?.stalls);
-  const stalls = Number.isFinite(rawStalls) && rawStalls >= 1 ? Math.floor(rawStalls) : 1;
+  const stallsFromCounts = Number.isFinite(rawStalls) && rawStalls >= 1 ? Math.floor(rawStalls) : 0;
+  const stalls = Math.max(1, stallsFromCounts, paperDispensers.length);
 
   const reportedLowPaper = parseNonNegativeInteger(bathroom?.lowPaperStalls);
   const reportedNoPaper = parseNonNegativeInteger(bathroom?.noPaperStalls);
-  const lowPaperStalls = clampCount(reportedLowPaper, stalls);
+  const hasPaperDetails = paperDispensers.length > 0;
+  const lowPaperStalls = hasPaperDetails
+    ? paperDispensers.filter(dispenser => normalizeLevel(dispenser?.level) === "low").length
+    : clampCount(reportedLowPaper, stalls);
   const remainingPaperCapacity = Math.max(0, stalls - lowPaperStalls);
-  const noPaperStalls = Math.min(reportedNoPaper, remainingPaperCapacity);
+  const noPaperStalls = hasPaperDetails
+    ? paperDispensers.filter(dispenser => normalizeLevel(dispenser?.level) === "empty").length
+    : Math.min(reportedNoPaper, remainingPaperCapacity);
 
   if (lowPaperStalls > 0) {
     alerts.push(
@@ -119,13 +138,19 @@ function computeMultiStallScore(bathroom) {
     );
   }
 
-  const totalSoapDispensers = parseNonNegativeInteger(bathroom?.soapDispensers);
   const reportedLowSoap = parseNonNegativeInteger(bathroom?.lowSoapDispensers);
   const reportedNoSoap = parseNonNegativeInteger(bathroom?.noSoapDispensers);
-  const soapCeiling = totalSoapDispensers > 0 ? totalSoapDispensers : reportedLowSoap + reportedNoSoap;
-  const lowSoapDispensers = clampCount(reportedLowSoap, soapCeiling);
+  const soapCeiling = soapDispensers.length > 0
+    ? soapDispensers.length
+    : parseNonNegativeInteger(bathroom?.soapDispensers) || reportedLowSoap + reportedNoSoap;
+  const hasSoapDetails = soapDispensers.length > 0;
+  const lowSoapDispensers = hasSoapDetails
+    ? soapDispensers.filter(dispenser => normalizeLevel(dispenser?.level) === "low").length
+    : clampCount(reportedLowSoap, soapCeiling);
   const remainingSoapCapacity = Math.max(0, soapCeiling - lowSoapDispensers);
-  const noSoapDispensers = Math.min(reportedNoSoap, remainingSoapCapacity);
+  const noSoapDispensers = hasSoapDetails
+    ? soapDispensers.filter(dispenser => normalizeLevel(dispenser?.level) === "empty").length
+    : Math.min(reportedNoSoap, remainingSoapCapacity);
 
   if (lowSoapDispensers > 0) {
     alerts.push(
@@ -155,7 +180,7 @@ function computeMultiStallScore(bathroom) {
 export function computeScore(bathroom) {
   const type = bathroom?.type || "multi-stall";
 
-  if (type === "single-stall" || type === "accessible") {
+  if (type === "single-stall" || type === "accessible" || type === "family") {
     return computeSingleOrAccessibleScore(bathroom);
   }
 

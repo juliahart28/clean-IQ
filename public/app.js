@@ -409,6 +409,14 @@ function describeConsumableLevel(level, label) {
     }
 }
 
+function normalizeConsumableLevel(level) {
+    const normalized = level ? String(level).toLowerCase() : "";
+    if (["ok", "low", "empty"].includes(normalized)) {
+        return normalized;
+    }
+    return "unknown";
+}
+
 function deriveDispenserSerial(bathroom, type) {
     if (!bathroom) {
         return "Unavailable";
@@ -538,55 +546,11 @@ function renderBathroomDetail() {
 
     if (selectors.bathroomDetailDispensers) {
         clear(selectors.bathroomDetailDispensers);
-        const lowPaperValue = Number(bathroom.lowPaperStalls);
-        const noPaperValue = Number(bathroom.noPaperStalls);
-        const lowPaperStalls = Number.isFinite(lowPaperValue) ? lowPaperValue : 0;
-        const noPaperStalls = Number.isFinite(noPaperValue) ? noPaperValue : 0;
-        const paperAlerts = [];
-        if (lowPaperStalls > 0) {
-            paperAlerts.push(`${lowPaperStalls} stall${lowPaperStalls === 1 ? "" : "s"} low on paper`);
+        if (bathroom.type === "multi-stall") {
+            renderMultiStallDispensers(selectors.bathroomDetailDispensers, bathroom);
+        } else {
+            renderSingleStallDispensers(selectors.bathroomDetailDispensers, bathroom);
         }
-        if (noPaperStalls > 0) {
-            paperAlerts.push(`${noPaperStalls} stall${noPaperStalls === 1 ? "" : "s"} out of paper`);
-        }
-
-        const lowSoapValue = Number(bathroom.lowSoapDispensers);
-        const noSoapValue = Number(bathroom.noSoapDispensers);
-        const lowSoapDispensers = Number.isFinite(lowSoapValue) ? lowSoapValue : 0;
-        const noSoapDispensers = Number.isFinite(noSoapValue) ? noSoapValue : 0;
-        const soapAlerts = [];
-        if (lowSoapDispensers > 0) {
-            soapAlerts.push(`${lowSoapDispensers} soap dispenser${lowSoapDispensers === 1 ? "" : "s"} low`);
-        }
-        if (noSoapDispensers > 0) {
-            soapAlerts.push(`${noSoapDispensers} soap dispenser${noSoapDispensers === 1 ? "" : "s"} empty`);
-        }
-
-        const dispensers = [
-            {
-                type: "soap",
-                label: "Soap Dispenser",
-                level: bathroom.soapLevel,
-                extra: soapAlerts.length > 0 ? soapAlerts.join(" · ") : null
-            },
-            {
-                type: "paper",
-                label: "Toilet Paper Dispenser",
-                level: bathroom.toiletPaperLevel,
-                extra: paperAlerts.length > 0 ? paperAlerts.join(" · ") : null
-            }
-        ];
-
-        dispensers.forEach(({ type, label, level, extra }) => {
-            const card = el("article", { class: "dispenser-card" });
-            append(card, el("h3", {}, label));
-            append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(level, label)));
-            if (extra) {
-                append(card, el("p", { class: "status-helper" }, extra));
-            }
-            append(card, el("span", { class: "dispenser-serial" }, `Serial: ${deriveDispenserSerial(bathroom, type)}`));
-            append(selectors.bathroomDetailDispensers, card);
-        });
     }
 
     if (selectors.bathroomDetailAlerts) {
@@ -603,6 +567,70 @@ function renderBathroomDetail() {
             );
         }
     }
+}
+
+function renderSingleStallDispensers(target, bathroom) {
+    const dispensers = [
+        {
+            type: "soap",
+            label: "Soap Dispenser",
+            level: bathroom.soapLevel
+        },
+        {
+            type: "paper",
+            label: "Toilet Paper Dispenser",
+            level: bathroom.toiletPaperLevel
+        }
+    ];
+
+    dispensers.forEach(({ type, label, level }) => {
+        const card = el("article", { class: "dispenser-card" });
+        append(card, el("h3", {}, label));
+        append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(level, label)));
+        append(card, el("span", { class: "dispenser-serial" }, `Serial: ${deriveDispenserSerial(bathroom, type)}`));
+        append(target, card);
+    });
+}
+
+function renderMultiStallDispensers(target, bathroom) {
+    const paperDispensers = Array.isArray(bathroom.paperDispensers) ? bathroom.paperDispensers : [];
+    const soapDispensers = Array.isArray(bathroom.soapDispensers) ? bathroom.soapDispensers : [];
+
+    const groups = [
+        { title: "Toilet Paper Dispensers", items: paperDispensers, label: "Paper" },
+        { title: "Soap Dispensers", items: soapDispensers, label: "Soap" }
+    ];
+
+    groups.forEach(({ title, items, label }) => {
+        append(target, el("h3", {}, title));
+
+        if (items.length === 0) {
+            append(target, el("p", { class: "status-helper" }, `No ${title.toLowerCase()} available.`));
+            return;
+        }
+
+        items.forEach((dispenser, index) => {
+            const card = el("article", { class: "dispenser-card" });
+            const dispenserLabel = `${label} Dispenser #${index + 1}`;
+            const normalized = normalizeConsumableLevel(dispenser.level);
+            let helperText = "Status unavailable";
+            if (normalized === "ok") {
+                helperText = "Stocked";
+            } else if (normalized === "low") {
+                helperText = "Low – schedule a refill.";
+            } else if (normalized === "empty") {
+                helperText = "Empty – needs immediate service.";
+            }
+
+            append(card, el("h4", {}, dispenserLabel));
+            append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(dispenser.level, dispenserLabel)));
+            append(card, el("p", { class: "status-helper" }, helperText));
+            if (dispenser.id) {
+                append(card, el("span", { class: "dispenser-serial" }, `Sensor: ${dispenser.id}`));
+            }
+            append(target, card);
+        });
+    });
 }
 
 function formatDateRange(start, end) {
@@ -1292,8 +1320,15 @@ function renderRestroomList() {
 async function markRestroomClean(bathroom) {
     if (bathroom.isCustom) {
         bathroom.numUses = 0;
+        bathroom.doorOpenEvents = 0;
         bathroom.soapLevel = "ok";
         bathroom.toiletPaperLevel = "ok";
+        if (Array.isArray(bathroom.paperDispensers)) {
+            bathroom.paperDispensers = bathroom.paperDispensers.map(dispenser => ({ ...dispenser, level: "ok" }));
+        }
+        if (Array.isArray(bathroom.soapDispensers)) {
+            bathroom.soapDispensers = bathroom.soapDispensers.map(dispenser => ({ ...dispenser, level: "ok" }));
+        }
         bathroom.score = 100;
         bathroom.category = "Clean";
         bathroom.alerts = [];
@@ -1635,6 +1670,12 @@ function registerEventListeners() {
                 }
             }
 
+            const stallCount = type === "multi-stall" ? Math.max(1, Math.floor(parsedStalls)) : 1;
+            const dispenserFactory = (prefix) => Array.from({ length: stallCount }, (_, index) => ({
+                id: `${sensor || name}-${prefix}-${index + 1}`,
+                level: "ok"
+            }));
+
             const newBathroom = {
                 id: `custom-bathroom-${Date.now()}`,
                 buildingId,
@@ -1644,11 +1685,15 @@ function registerEventListeners() {
                 name,
                 type,
                 sensorId: sensor,
+                doorOpenEvents: 0,
                 numUses: 0,
-                soapLevel: "ok",
-                toiletPaperLevel: "ok",
-                stalls: type === "multi-stall" ? Math.max(1, Math.floor(parsedStalls)) : null,
+                soapLevel: type === "multi-stall" ? null : "ok",
+                toiletPaperLevel: type === "multi-stall" ? null : "ok",
+                stalls: type === "multi-stall" ? stallCount : 1,
+                paperDispensers: type === "multi-stall" ? dispenserFactory("paper") : null,
+                soapDispensers: type === "multi-stall" ? dispenserFactory("soap") : 1,
                 lowPaperStalls: type === "multi-stall" ? 0 : null,
+                lowSoapDispensers: type === "multi-stall" ? 0 : null,
                 score: 100,
                 category: "Clean",
                 alerts: [],
