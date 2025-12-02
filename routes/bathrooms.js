@@ -44,19 +44,21 @@ router.post("/prioritize", (req, res) => {
     return res.status(400).json({ error: "currentFloor is required" });
   }
 
+  const parsedFloor = Number(currentFloor);
+  if (!Number.isFinite(parsedFloor)) {
+    return res.status(400).json({ error: "currentFloor must be a number" });
+  }
+
   const employee = getEmployeeById(janitorId);
   if (!employee) {
     return res.status(404).json({ error: "Employee not found" });
   }
 
   const bathrooms = listBathrooms().filter(
-    bathroom => bathroom.buildingId === employee.assignedBuildingId
+    bathroom =>
+      bathroom.buildingId === employee.assignedBuildingId &&
+      Number(bathroom.floorNumber) === parsedFloor
   );
-
-  const parsedFloor = Number(currentFloor);
-  if (!Number.isFinite(parsedFloor)) {
-    return res.status(400).json({ error: "currentFloor must be a number" });
-  }
 
   const prioritized = prioritizeBathrooms({
     bathrooms,

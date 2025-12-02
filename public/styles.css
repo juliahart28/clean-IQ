@@ -278,6 +278,11 @@ button {
     color: rgba(255, 255, 255, 0.9);
 }
 
+.app {
+    background: var(--brand-navy);
+    min-height: 100vh;
+}
+
 .app-main {
     padding: clamp(24px, 5vw, 36px);
     display: grid;
