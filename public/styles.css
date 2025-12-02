@@ -220,6 +220,15 @@ button {
     transform: translateY(-1px);
 }
 
+.gold-button {
+    background: #d4a017;
+    color: #fff;
+}
+
+.gold-button:hover {
+    background: #b8860b;
+}
+
 .profile-button {
     background: rgba(255, 255, 255, 0.16);
     color: #fff;
@@ -336,6 +345,11 @@ button {
 
 .page-header button {
     align-self: flex-start;
+}
+
+#bathroom-directory-view .page-header h2,
+#bathroom-detail-view .page-header h2 {
+    color: #fff;
 }
 
 .panel-header {
