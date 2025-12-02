@@ -467,7 +467,26 @@ function showBathroomDirectory() {
         selectors.bathroomDetailView.classList.add("hidden");
     }
     state.selectedBathroomId = null;
+    resetBathroomDetailContent();
     renderBathroomTable();
+}
+
+function resetBathroomDetailContent() {
+    if (selectors.bathroomDetailName) {
+        setText(selectors.bathroomDetailName, "");
+    }
+    if (selectors.bathroomDetailScore) {
+        clear(selectors.bathroomDetailScore);
+    }
+    if (selectors.bathroomDetailMeta) {
+        clear(selectors.bathroomDetailMeta);
+    }
+    if (selectors.bathroomDetailDispensers) {
+        clear(selectors.bathroomDetailDispensers);
+    }
+    if (selectors.bathroomDetailAlerts) {
+        clear(selectors.bathroomDetailAlerts);
+    }
 }
 
 function showBathroomDetail(bathroomId) {
@@ -570,25 +589,37 @@ function renderBathroomDetail() {
 }
 
 function renderSingleStallDispensers(target, bathroom) {
-    const dispensers = [
+    const groups = [
         {
-            type: "soap",
-            label: "Soap Dispenser",
-            level: bathroom.soapLevel
+            title: "Toilet Paper Status",
+            items: [
+                {
+                    type: "paper",
+                    label: "Toilet Paper Dispenser",
+                    level: bathroom.toiletPaperLevel
+                }
+            ],
+            emptyLabel: "Toilet paper sensor data unavailable."
         },
         {
-            type: "paper",
-            label: "Toilet Paper Dispenser",
-            level: bathroom.toiletPaperLevel
+            title: "Soap Dispenser Status",
+            items: [
+                {
+                    type: "soap",
+                    label: "Soap Dispenser",
+                    level: bathroom.soapLevel
+                }
+            ],
+            emptyLabel: "Soap sensor data unavailable."
         }
     ];
 
-    dispensers.forEach(({ type, label, level }) => {
+    renderDispenserGroups(target, groups, (item) => {
         const card = el("article", { class: "dispenser-card" });
-        append(card, el("h3", {}, label));
-        append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(level, label)));
-        append(card, el("span", { class: "dispenser-serial" }, `Serial: ${deriveDispenserSerial(bathroom, type)}`));
-        append(target, card);
+        append(card, el("h3", {}, item.label));
+        append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(item.level, item.label)));
+        append(card, el("span", { class: "dispenser-serial" }, `Serial: ${deriveDispenserSerial(bathroom, item.type)}`));
+        return card;
     });
 }
 
@@ -597,39 +628,60 @@ function renderMultiStallDispensers(target, bathroom) {
     const soapDispensers = Array.isArray(bathroom.soapDispensers) ? bathroom.soapDispensers : [];
 
     const groups = [
-        { title: "Toilet Paper Dispensers", items: paperDispensers, label: "Paper" },
-        { title: "Soap Dispensers", items: soapDispensers, label: "Soap" }
+        {
+            title: "Toilet Paper Status",
+            items: paperDispensers,
+            label: "Toilet Paper",
+            emptyLabel: "No toilet paper sensors available."
+        },
+        {
+            title: "Soap Dispenser Status",
+            items: soapDispensers,
+            label: "Soap",
+            emptyLabel: "No soap sensors available."
+        }
     ];
 
-    groups.forEach(({ title, items, label }) => {
-        append(target, el("h3", {}, title));
-
-        if (items.length === 0) {
-            append(target, el("p", { class: "status-helper" }, `No ${title.toLowerCase()} available.`));
-            return;
+    renderDispenserGroups(target, groups, (dispenser, index, group) => {
+        const card = el("article", { class: "dispenser-card" });
+        const dispenserLabel = `${group.label} Dispenser #${index + 1}`;
+        const normalized = normalizeConsumableLevel(dispenser.level);
+        let helperText = "Status unavailable";
+        if (normalized === "ok") {
+            helperText = "Stocked";
+        } else if (normalized === "low") {
+            helperText = "Low – schedule a refill.";
+        } else if (normalized === "empty") {
+            helperText = "Empty – needs immediate service.";
         }
 
-        items.forEach((dispenser, index) => {
-            const card = el("article", { class: "dispenser-card" });
-            const dispenserLabel = `${label} Dispenser #${index + 1}`;
-            const normalized = normalizeConsumableLevel(dispenser.level);
-            let helperText = "Status unavailable";
-            if (normalized === "ok") {
-                helperText = "Stocked";
-            } else if (normalized === "low") {
-                helperText = "Low – schedule a refill.";
-            } else if (normalized === "empty") {
-                helperText = "Empty – needs immediate service.";
-            }
+        append(card, el("h4", {}, dispenserLabel));
+        append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(dispenser.level, dispenserLabel)));
+        append(card, el("p", { class: "status-helper" }, helperText));
+        if (dispenser.id) {
+            append(card, el("span", { class: "dispenser-serial" }, `Sensor: ${dispenser.id}`));
+        }
+        return card;
+    });
+}
 
-            append(card, el("h4", {}, dispenserLabel));
-            append(card, el("p", { class: "dispenser-status" }, describeConsumableLevel(dispenser.level, dispenserLabel)));
-            append(card, el("p", { class: "status-helper" }, helperText));
-            if (dispenser.id) {
-                append(card, el("span", { class: "dispenser-serial" }, `Sensor: ${dispenser.id}`));
-            }
-            append(target, card);
-        });
+        function renderDispenserGroups(target, groups, renderCard) {
+    clear(target);
+    groups.forEach(group => {
+        const wrapper = el("div", { class: "dispenser-group" });
+        append(wrapper, el("h3", { class: "dispenser-group-title" }, group.title));
+
+            if (!group.items || group.items.length === 0) {
+            append(wrapper, el("p", { class: "status-helper" }, group.emptyLabel));
+        } else {
+            const grid = el("div", { class: "dispenser-grid" });
+            group.items.forEach((item, index) => {
+                append(grid, renderCard(item, index, group));
+            });
+            append(wrapper, grid);
+        }
+
+        append(target, wrapper);
     });
 }
 

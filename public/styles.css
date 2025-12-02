@@ -868,6 +868,23 @@ td {
 
 .detail-dispensers {
     display: grid;
+    gap: 20px;
+}
+
+.dispenser-group {
+    display: grid;
+    gap: 12px;
+    padding-left: 12px;
+}
+
+.dispenser-group-title {
+    margin: 0;
+    color: var(--brand-navy);
+    font-size: 1.1rem;
+}
+
+.dispenser-grid {
+    display: grid;
     gap: 16px;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
