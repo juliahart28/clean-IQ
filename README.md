@@ -8,5 +8,5 @@ Along with this scoring system, the program also has the feature of creating a c
 
 In the system, there are two dashboards: the manager, and the janitor. On the manager side, there is a list of all bathrooms in the database, a list of employees scheduled in the system, and the three floors who have the lowest average bathroom score. On the janitor side, there is their personalized route, and all the buildings on their assigned floor.
 
-To run the project in GitHub, run "node server.js". I hope you enjoy this project, and more will be released in the near future!
+For the sake of simulation, I have entered some sample data into the system to see how it would run and display. To run the project in GitHub, run "node server.js". I hope you enjoy this project, and more will be released in the near future!
 
